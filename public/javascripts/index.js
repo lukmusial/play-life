@@ -69,6 +69,9 @@ $(function() {
             });
         }
     });
+
+    // Initialize on page load
+    $("#resetButton").click();
 });
 
 // Legacy server-side refresh for comparison
