@@ -1,11 +1,21 @@
 // Game of Life - Scala.js Client
-// Uses client-side computation for maximum performance
+// Uses client-side computation with optimized rendering for maximum performance
 
-var useScalaJs = true;  // Set to false to use server-side computation
+// Rendering modes:
+// 1. "optimized" - Direct Scala.js rendering with Uint32Array (fastest)
+// 2. "scalajs" - Scala.js with hex encoding + JS draw callback
+// 3. "server" - Server-side computation with AJAX (legacy)
+var renderMode = "optimized";
 
 $(function() {
     $("#autoRefreshButton").click(function(event) {
-        if (useScalaJs) {
+        if (renderMode === "optimized") {
+            if (!GameClient.isRunning()) {
+                GameClient.startOptimized();
+            } else {
+                GameClient.stopAnimation();
+            }
+        } else if (renderMode === "scalajs") {
             if (!GameClient.isRunning()) {
                 GameClient.startAnimation(function(data) {
                     draw(data);
@@ -27,7 +37,10 @@ $(function() {
     });
 
     $("#singleRefreshButton").click(function(event) {
-        if (useScalaJs) {
+        if (renderMode === "optimized") {
+            GameClient.stopAnimation();
+            GameClient.stepOptimized();
+        } else if (renderMode === "scalajs") {
             GameClient.stopAnimation();
             var data = GameClient.step();
             draw(data);
@@ -41,7 +54,10 @@ $(function() {
         var width = $(this).data('width');
         var height = $(this).data('height');
 
-        if (useScalaJs) {
+        if (renderMode === "optimized") {
+            GameClient.stopAnimation();
+            GameClient.initOptimized(width, height);
+        } else if (renderMode === "scalajs") {
             GameClient.stopAnimation();
             var data = GameClient.init(width, height);
             draw(data);
