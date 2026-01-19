@@ -2,7 +2,6 @@ package models.com.bulba.canvas
 
 import models.com.bulba.Cell
 import models.com.bulba.stagingstrategy.StagingStrategy
-import scala.collection.parallel.CollectionConverters._
 
 trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
 
@@ -18,23 +17,24 @@ trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
 
   def haveNeighborsChanged(x: Int, y: Int): Boolean
 
+  def gridWidth: Int = if (canvas.nonEmpty) canvas.head.length else 0
+  def gridHeight: Int = canvas.length
+
   override def toString: String = {
-    canvas map (_.mkString("")) mkString "\n"
+    canvas.map(_.mkString("")).mkString("\n")
   }
 
   def toNumericSequence: Seq[Seq[Long]] = {
-
     def rowToSeqLong(row: Seq[Cell]): Seq[Long] = {
       if (row.length > 53) {
         val rows = row.splitAt(53)
         Seq(java.lang.Long.parseLong(rows._1.mkString, 2)) ++ rowToSeqLong(rows._2)
       } else Seq(java.lang.Long.parseLong(row.mkString, 2))
     }
-    canvas.par.map(rowToSeqLong(_)).seq
+    canvas.map(rowToSeqLong(_))
   }
 
   def toHex: Seq[String] = {
-
     def rowToHex(row: Seq[Cell]): String = {
       row.length match {
         case x if x == 0 => ""
@@ -42,18 +42,8 @@ trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
         case _ => Integer.parseInt(row.take(8).mkString, 2).asInstanceOf[Char] + rowToHex(row.drop(8))
       }
     }
-
-    Seq(canvas.length.toString, canvas.head.length.toString) ++ canvas.par.map(rowToHex(_)).seq
+    Seq(canvas.length.toString, canvas.head.length.toString) ++ canvas.map(rowToHex(_))
   }
 
   def stage(): Canvas[S, T]
-
 }
-
-
-
-
-
-
-
-

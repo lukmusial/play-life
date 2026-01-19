@@ -1,78 +1,85 @@
-var doRefresh = false;
-var frameCount = 0;
-var lastFpsUpdate = performance.now();
-var currentFps = 0;
+// Game of Life - Scala.js Client
+// Uses client-side computation for maximum performance
 
-// FPS tracking
-function updateFps() {
-    frameCount++;
-    var now = performance.now();
-    var elapsed = now - lastFpsUpdate;
-
-    if (elapsed >= 1000) {
-        currentFps = Math.round((frameCount * 1000) / elapsed);
-        frameCount = 0;
-        lastFpsUpdate = now;
-        updateFpsDisplay();
-    }
-}
-
-function updateFpsDisplay() {
-    var fpsElement = document.getElementById('fpsCounter');
-    if (fpsElement) {
-        fpsElement.textContent = 'FPS: ' + currentFps;
-        // Color code: green > 30, yellow > 15, red <= 15
-        if (currentFps > 30) {
-            fpsElement.style.color = '#00ff00';
-        } else if (currentFps > 15) {
-            fpsElement.style.color = '#ffff00';
-        } else {
-            fpsElement.style.color = '#ff0000';
-        }
-    }
-}
+var useScalaJs = true;  // Set to false to use server-side computation
 
 $(function() {
     $("#autoRefreshButton").click(function(event) {
-        if (doRefresh == false) {
-             doRefresh = true;
-             frameCount = 0;
-             lastFpsUpdate = performance.now();
-             refresh();
+        if (useScalaJs) {
+            if (!GameClient.isRunning()) {
+                GameClient.startAnimation(function(data) {
+                    draw(data);
+                });
+            } else {
+                GameClient.stopAnimation();
+            }
+        } else {
+            // Legacy server-side mode
+            if (!window.doRefresh) {
+                window.doRefresh = true;
+                window.frameCount = 0;
+                window.lastFpsUpdate = performance.now();
+                legacyRefresh();
+            } else {
+                window.doRefresh = false;
+            }
         }
-        else {
-            doRefresh = false;
-        }
-    })
-})
+    });
 
-$(function() {
     $("#singleRefreshButton").click(function(event) {
-             doRefresh = false;
-             refresh();
-    })
-})
+        if (useScalaJs) {
+            GameClient.stopAnimation();
+            var data = GameClient.step();
+            draw(data);
+        } else {
+            window.doRefresh = false;
+            legacyRefresh();
+        }
+    });
 
-$(function() {
     $("#resetButton").click(function(event) {
         var width = $(this).data('width');
         var height = $(this).data('height');
-        jsRoutes.controllers.LifeController.reset(width, height).ajax({
-               success: function(data) {
-                 draw(data)
-               }
-            })
-    })
-})
 
+        if (useScalaJs) {
+            GameClient.stopAnimation();
+            var data = GameClient.init(width, height);
+            draw(data);
+        } else {
+            jsRoutes.controllers.LifeController.reset(width, height).ajax({
+                success: function(data) {
+                    draw(data);
+                }
+            });
+        }
+    });
+});
 
-function refresh() {
-    if (doRefresh == true)
-        setTimeout(refresh, 0);  // Changed from 50ms to 0 for max speed
+// Legacy server-side refresh for comparison
+function legacyRefresh() {
+    if (window.doRefresh)
+        setTimeout(legacyRefresh, 0);
     jsRoutes.controllers.LifeController.getState().ajax({
-               success: function(data) {
-                   draw(data);
-                   updateFps();
-               }
-    })
+        success: function(data) {
+            draw(data);
+            updateLegacyFps();
+        }
+    });
+}
+
+function updateLegacyFps() {
+    window.frameCount = (window.frameCount || 0) + 1;
+    var now = performance.now();
+    var elapsed = now - (window.lastFpsUpdate || now);
+
+    if (elapsed >= 1000) {
+        var fps = Math.round((window.frameCount * 1000) / elapsed);
+        window.frameCount = 0;
+        window.lastFpsUpdate = now;
+        var fpsElement = document.getElementById('fpsCounter');
+        if (fpsElement) {
+            fpsElement.textContent = 'FPS: ' + fps + ' (Server)';
+            fpsElement.style.color = fps > 30 ? '#00ff00' : fps > 15 ? '#ffff00' : '#ff0000';
+        }
+    }
 }
