@@ -2,16 +2,16 @@ package controllers
 
 import play.api.mvc._
 import play.api.libs.json.Json
-import play.api.Routes
+import play.api.routing.JavaScriptReverseRouter
 import models.com.bulba.GameState
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import com.google.common.cache.CacheBuilder
 import java.util.concurrent.TimeUnit
-import scala.Some
-import play.api.mvc.SimpleResult
 import models.com.bulba.canvas.RandomCanvas
+import javax.inject._
 
-object LifeController extends Controller {
+@Singleton
+class LifeController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
 
   val states = CacheBuilder.
     newBuilder().
@@ -22,13 +22,13 @@ object LifeController extends Controller {
 
   def getState = Action {
     implicit request =>
-      session.get("state") match {
+      request.session.get("state") match {
 
         case Some(sessionState) =>
-          if (!states.contains(sessionState.asInstanceOf[String])) {
-            resetHelper(session.get("height").getOrElse(300).asInstanceOf[Int], session.get("width").getOrElse(424).asInstanceOf[Int])
+          if (!states.contains(sessionState)) {
+            resetHelper(request.session.get("height").map(_.toInt).getOrElse(300), request.session.get("width").map(_.toInt).getOrElse(424))
           } else {
-            val state = states(sessionState.asInstanceOf[String])
+            val state = states(sessionState)
             states += (sessionState -> state)
             state.advance()
             Ok(Json.toJson(state.toHex))
@@ -42,8 +42,8 @@ object LifeController extends Controller {
   }
 
 
-  def resetHelper(height: Int, width: Int)(implicit request: Request[AnyContent]): SimpleResult = {
-    session.get("state") match {
+  def resetHelper(height: Int, width: Int)(implicit request: Request[AnyContent]): Result = {
+    request.session.get("state") match {
 
       case Some(sessionState) =>
         states += (sessionState -> new GameState(RandomCanvas(height, width)))
@@ -66,12 +66,12 @@ object LifeController extends Controller {
 
   def javascriptRoutes = Action {
     implicit request =>
-      Ok(Routes.javascriptRouter("jsRoutes")
-        (routes.javascript.LifeController.getState,
-         routes.javascript.LifeController.reset,
-         routes.javascript.ThreedController.getState,
-         routes.javascript.ThreedController.reset
-          )).as(JAVASCRIPT)
+      Ok(JavaScriptReverseRouter("jsRoutes")(
+        routes.javascript.LifeController.getState,
+        routes.javascript.LifeController.reset,
+        routes.javascript.ThreedController.getState,
+        routes.javascript.ThreedController.reset
+      )).as(JAVASCRIPT)
   }
 
 }

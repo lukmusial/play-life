@@ -1,11 +1,11 @@
 package models.com.bulba
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import models.com.bulba.canvas.StringCanvas
 
 
-class StringCanvasSpec extends FlatSpec with ShouldMatchers{
+class StringCanvasSpec extends AnyFlatSpec with Matchers {
 
   val entry1Canvas = """
     0000

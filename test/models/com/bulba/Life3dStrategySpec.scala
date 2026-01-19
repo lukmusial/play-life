@@ -1,11 +1,11 @@
 package models.com.bulba
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import models.com.bulba.stagingstrategy.Life3dStagingStrategy
 
 
-class Life3dStrategySpec extends FlatSpec with ShouldMatchers{
+class Life3dStrategySpec extends AnyFlatSpec with Matchers {
 
   //B9 10 11/S 6 7 8 9 10 11
   val strategy = Life3dStagingStrategy

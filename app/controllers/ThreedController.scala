@@ -2,18 +2,18 @@ package controllers
 
 import play.api.mvc._
 import play.api.libs.json.Json
-import play.api.Routes
 import models.com.bulba._
-import collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import com.google.common.cache.CacheBuilder
 import java.util.concurrent.TimeUnit
-import scala.Some
-import play.api.mvc.SimpleResult
-import scala.Some
-import play.api.mvc.SimpleResult
-import play.mvc.Result
+import org.webjars.play.WebJarsUtil
+import javax.inject._
 
-object ThreedController extends Controller {
+@Singleton
+class ThreedController @Inject()(
+    val controllerComponents: ControllerComponents,
+    implicit val webJarsUtil: WebJarsUtil
+) extends BaseController {
 
   val states = CacheBuilder.
     newBuilder().
@@ -21,18 +21,18 @@ object ThreedController extends Controller {
     build[String, Game3DState[VC, VVC]]().asMap().asScala
 
   def index = Action {
-    Ok(views.html.threed.render())
+    Ok(views.html.threed())
   }
 
   def getState = Action {
     implicit request =>
-      session.get("state") match {
+      request.session.get("state") match {
 
         case Some(sessionState) =>
-          if (!states.contains(sessionState.asInstanceOf[String])) {
-            resetHelper(session.get("layers").getOrElse(20).asInstanceOf[Int], session.get("height").getOrElse(300).asInstanceOf[Int], session.get("width").getOrElse(424).asInstanceOf[Int])
+          if (!states.contains(sessionState)) {
+            resetHelper(request.session.get("layers").map(_.toInt).getOrElse(20), request.session.get("height").map(_.toInt).getOrElse(300), request.session.get("width").map(_.toInt).getOrElse(424))
           } else {
-            val state = states(sessionState.asInstanceOf[String])
+            val state = states(sessionState)
             states += (sessionState -> state)
             state.advance()
             Ok(Json.toJson(state.toNumericSequence))
@@ -46,8 +46,8 @@ object ThreedController extends Controller {
   }
 
 
-  def resetHelper(layers: Int, height: Int, width: Int)(implicit request: Request[AnyContent]): SimpleResult = {
-    session.get("state") match {
+  def resetHelper(layers: Int, height: Int, width: Int)(implicit request: Request[AnyContent]): Result = {
+    request.session.get("state") match {
 
       case Some(sessionState) =>
         states += (sessionState -> new Game3DState[VC, VVC](Universe(layers, width, height)))
