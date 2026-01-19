@@ -1,6 +1,7 @@
 package models.com.bulba
 
 import models.com.bulba.canvas.Random3dCanvas
+import scala.collection.parallel.CollectionConverters._
 
 class Universe[S <: Seq[Cell], T <: Seq[S]](layers: Layers[S, T])  {
 
@@ -8,9 +9,9 @@ class Universe[S <: Seq[Cell], T <: Seq[S]](layers: Layers[S, T])  {
     new Universe(layers.stageStatefully())
   }
 
-  def toNumericSequence: Seq[Seq[Seq[Long]]] = layers.par.map(_.toNumericSequence).seq
+  def toNumericSequence: Seq[Seq[Seq[Long]]] = layers.par.map(_.toNumericSequence).toSeq
 
-  def toHex: Seq[Seq[String]] = layers.par.map(_.toHex).seq
+  def toHex: Seq[Seq[String]] = layers.par.map(_.toHex).toSeq
 
   override def toString : String = layers.toString()
 

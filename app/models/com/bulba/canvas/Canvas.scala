@@ -2,6 +2,7 @@ package models.com.bulba.canvas
 
 import models.com.bulba.Cell
 import models.com.bulba.stagingstrategy.StagingStrategy
+import scala.collection.parallel.CollectionConverters._
 
 trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
 
@@ -29,7 +30,7 @@ trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
         Seq(java.lang.Long.parseLong(rows._1.mkString, 2)) ++ rowToSeqLong(rows._2)
       } else Seq(java.lang.Long.parseLong(row.mkString, 2))
     }
-    canvas.par.map(rowToSeqLong(_)).seq
+    canvas.par.map(rowToSeqLong(_)).toSeq
   }
 
   def toHex: Seq[String] = {
@@ -42,7 +43,7 @@ trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
       }
     }
 
-    Seq(canvas.length.toString, canvas.head.length.toString) ++ canvas.par.map(rowToHex(_)).seq
+    Seq(canvas.length.toString, canvas.head.length.toString) ++ canvas.par.map(rowToHex(_)).toSeq
   }
 
   def stage(): Canvas[S, T]
