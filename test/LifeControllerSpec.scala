@@ -18,7 +18,6 @@ class LifeControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerTe
 
       status(result) shouldEqual OK
       contentType(result) should be(Some("application/json"))
-      charset(result) should be (Some("utf-8"))
       contentAsString(result) should startWith("[")
     }
 

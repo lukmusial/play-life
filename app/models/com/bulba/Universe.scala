@@ -9,9 +9,9 @@ class Universe[S <: Seq[Cell], T <: Seq[S]](layers: Layers[S, T])  {
     new Universe(layers.stageStatefully())
   }
 
-  def toNumericSequence: Seq[Seq[Seq[Long]]] = layers.par.map(_.toNumericSequence).toSeq
+  def toNumericSequence: Seq[Seq[Seq[Long]]] = layers.par.map(_.toNumericSequence).seq
 
-  def toHex: Seq[Seq[String]] = layers.par.map(_.toHex).toSeq
+  def toHex: Seq[Seq[String]] = layers.par.map(_.toHex).seq
 
   override def toString : String = layers.toString()
 

@@ -22,11 +22,11 @@ class LifeController @Inject()(val controllerComponents: ControllerComponents) e
 
   def getState = Action {
     implicit request =>
-      session.get("state") match {
+      request.session.get("state") match {
 
         case Some(sessionState) =>
           if (!states.contains(sessionState)) {
-            resetHelper(session.get("height").map(_.toInt).getOrElse(300), session.get("width").map(_.toInt).getOrElse(424))
+            resetHelper(request.session.get("height").map(_.toInt).getOrElse(300), request.session.get("width").map(_.toInt).getOrElse(424))
           } else {
             val state = states(sessionState)
             states += (sessionState -> state)
@@ -43,7 +43,7 @@ class LifeController @Inject()(val controllerComponents: ControllerComponents) e
 
 
   def resetHelper(height: Int, width: Int)(implicit request: Request[AnyContent]): Result = {
-    session.get("state") match {
+    request.session.get("state") match {
 
       case Some(sessionState) =>
         states += (sessionState -> new GameState(RandomCanvas(height, width)))
