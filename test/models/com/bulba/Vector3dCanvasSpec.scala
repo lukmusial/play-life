@@ -1,11 +1,11 @@
 package models.com.bulba
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import models.com.bulba.canvas.Vector3dCanvas
 
 
-class Vector3dCanvasSpec extends FlatSpec with ShouldMatchers{
+class Vector3dCanvasSpec extends AnyFlatSpec with Matchers {
 
   // D L L
   // L D D

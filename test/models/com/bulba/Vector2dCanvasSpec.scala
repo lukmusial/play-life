@@ -1,10 +1,10 @@
 package models.com.bulba
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import models.com.bulba.canvas.{Vector2dCanvas, Canvas, Finite2dCanvas, VectorCanvas}
 
-class Vector2dCanvasSpec extends FlatSpec with ShouldMatchers {
+class Vector2dCanvasSpec extends AnyFlatSpec with Matchers {
 
   "2d array canvas" should "populate set of changed cells" in {
       val canvas = new Vector2dCanvas(Vector(Vector(LiveCell, LiveCell), Vector(DeadCell, LiveCell), Vector(DeadCell, DeadCell)), Set((0,1), (0, 0), (1, 0), (1,1)))

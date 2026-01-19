@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   "org.webjars" % "jquery" % "3.7.1",
   "org.scalatest" %% "scalatest" % "3.2.19" % Test,
   "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.1" % Test,
+  "org.scalatestplus" %% "selenium-4-21" % "3.2.19.0" % Test,
   "com.google.guava" % "guava" % "33.4.0-jre"
 )
 
