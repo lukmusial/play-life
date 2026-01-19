@@ -1,6 +1,7 @@
 package models.com.bulba
 
 import models.com.bulba.canvas.Random3dCanvas
+import scala.collection.parallel.CollectionConverters._
 
 class Universe[S <: Seq[Cell], T <: Seq[S]](layers: Layers[S, T])  {
 

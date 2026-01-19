@@ -1,19 +1,21 @@
-import controllers.routes
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
-import play.api.test.WithApplication
-import play.mvc.Http.Status._
-import play.mvc.Result
-import play.test.Helpers._
+package test
 
-class MainControllerSpec extends FlatSpec with ShouldMatchers{
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.play._
+import org.scalatestplus.play.guice._
+import play.api.test._
+import play.api.test.Helpers._
 
-  "Index" should "contain a correct string" in new WithApplication {
-        val result: Result = callAction(routes.ref.MainController.index)
-        status(result) should be (OK)
-        contentType(result) should be ("text/html")
-        charset(result) should be ("utf-8")
-        contentAsString(result) should include ("Auto Refresh")
+class MainControllerSpec extends AnyFlatSpec with Matchers with GuiceOneAppPerTest with Injecting {
+
+  "Index" should "contain a correct string" in {
+    val controller = inject[controllers.MainController]
+    val result = controller.index(FakeRequest())
+    status(result) should be (OK)
+    contentType(result) should be (Some("text/html"))
+    charset(result) should be (Some("utf-8"))
+    contentAsString(result) should include ("Auto Refresh")
   }
 
 }

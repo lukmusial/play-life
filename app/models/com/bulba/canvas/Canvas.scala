@@ -2,6 +2,7 @@ package models.com.bulba.canvas
 
 import models.com.bulba.Cell
 import models.com.bulba.stagingstrategy.StagingStrategy
+import scala.collection.parallel.CollectionConverters._
 
 trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
 
