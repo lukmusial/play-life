@@ -7,6 +7,14 @@
 // 3. "server" - Server-side computation with AJAX (legacy)
 var renderMode = "optimized";
 
+// Debug: Check if GameClient is available
+if (typeof GameClient === 'undefined') {
+    console.error("GameClient not loaded! Falling back to server mode.");
+    renderMode = "server";
+} else {
+    console.log("GameClient loaded, using " + renderMode + " mode");
+}
+
 $(function() {
     $("#autoRefreshButton").click(function(event) {
         if (renderMode === "optimized") {
@@ -53,10 +61,12 @@ $(function() {
     $("#resetButton").click(function(event) {
         var width = $(this).data('width');
         var height = $(this).data('height');
+        console.log("Reset clicked: " + width + "x" + height + ", mode: " + renderMode);
 
         if (renderMode === "optimized") {
             GameClient.stopAnimation();
             GameClient.initOptimized(width, height);
+            console.log("Initialized with optimized rendering");
         } else if (renderMode === "scalajs") {
             GameClient.stopAnimation();
             var data = GameClient.init(width, height);
