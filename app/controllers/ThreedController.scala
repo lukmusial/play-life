@@ -6,10 +6,14 @@ import models.com.bulba._
 import scala.jdk.CollectionConverters._
 import com.google.common.cache.CacheBuilder
 import java.util.concurrent.TimeUnit
+import org.webjars.play.WebJarsUtil
 import javax.inject._
 
 @Singleton
-class ThreedController @Inject()(val controllerComponents: ControllerComponents) extends BaseController {
+class ThreedController @Inject()(
+    val controllerComponents: ControllerComponents,
+    implicit val webJarsUtil: WebJarsUtil
+) extends BaseController {
 
   val states = CacheBuilder.
     newBuilder().
@@ -17,7 +21,7 @@ class ThreedController @Inject()(val controllerComponents: ControllerComponents)
     build[String, Game3DState[VC, VVC]]().asMap().asScala
 
   def index = Action {
-    Ok(views.html.threed.render())
+    Ok(views.html.threed())
   }
 
   def getState = Action {
