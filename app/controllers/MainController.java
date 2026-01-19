@@ -2,11 +2,18 @@ package controllers;
 
 import play.mvc.Controller;
 import play.mvc.Result;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
+@Singleton
 public class MainController extends Controller {
-    
-    public static Result index() {
+
+    @Inject
+    public MainController() {
+    }
+
+    public Result index() {
         return ok(views.html.index.render());
     }
-    
+
 }
