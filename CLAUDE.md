@@ -6,20 +6,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Play-Life is a Scala implementation of Conway's Game of Life using Play Framework 3.0 with both 2D and 3D visualization capabilities. It uses HTML5 Canvas for 2D rendering and Three.js for 3D visualization.
 
+**Key Feature**: The 2D game logic runs entirely in the browser via Scala.js, eliminating network latency for 60 FPS performance.
+
+## Project Structure
+
+```
+play-life/
+├── shared/                 # Cross-compiled code (JVM + JS)
+│   └── src/main/scala/
+│       └── models/com/bulba/
+│           ├── Cell.scala
+│           ├── GameState.scala
+│           ├── canvas/         # 2D canvas implementations
+│           └── stagingstrategy/
+├── client/                 # Scala.js browser client
+│   └── src/main/scala/
+│       └── client/
+│           └── GameClient.scala
+├── server/                 # Play Framework server
+│   ├── app/
+│   │   ├── controllers/
+│   │   ├── models/com/bulba/   # 3D-specific code only
+│   │   └── views/
+│   ├── conf/
+│   └── test/
+├── public/                 # Static assets
+│   ├── javascripts/
+│   │   ├── scalajs/       # Compiled Scala.js output
+│   │   ├── draw.js
+│   │   └── index.js
+│   └── stylesheets/
+└── build.sbt              # Multi-project SBT build
+```
+
 ## Build and Run Commands
 
 ```bash
-# Run the web application (serves at http://localhost:9000)
-sbt run
+# Compile Scala.js client (required before running server)
+sbt client/fastLinkJS
 
-# Run tests
-sbt test
+# Run the Play server (serves at http://localhost:9000)
+sbt server/run
+
+# Run all tests
+sbt server/test
 
 # Run a single test class
-sbt "testOnly test.LifeControllerSpec"
+sbt "server/testOnly test.UISpec"
 
-# Compile without running
+# Compile everything
 sbt compile
+
+# Full optimized Scala.js build (for production)
+sbt client/fullLinkJS
 
 # Interactive SBT shell
 sbt
@@ -32,23 +71,36 @@ sbt
 
 ## Architecture
 
-### Core Domain Model (`app/models/com/bulba/`)
+### Shared Module (`shared/`)
 
-The game logic follows a functional approach with immutable cells and canvas types:
+Cross-compiled code that runs on both JVM and browser:
 
-- **Cell** (`Cell.scala`): Sealed trait with `LiveCell` and `DeadCell` case objects. Cells delegate state transitions to a `StagingStrategy`.
-
-- **Canvas** (`canvas/Canvas.scala`): Trait representing a 2D grid of cells. Implementations include:
+- **Cell** (`Cell.scala`): Sealed trait with `LiveCell` and `DeadCell` case objects
+- **Canvas** (`canvas/Canvas.scala`): Trait representing a 2D grid of cells
   - `Vector2dCanvas`, `RandomCanvas`, `StringCanvas` for 2D
-  - `Vector3dCanvas`, `Random3dCanvas`, `Finite3dCanvas` for 3D layers
-
-- **StagingStrategy** (`stagingstrategy/`): Encapsulates the rules for cell evolution:
+- **StagingStrategy**: Rules for cell evolution
   - `Life2dStagingStrategy`: Standard Conway rules (B3/S23)
   - `Life3dStagingStrategy`: 3D variant (B9-11/S6-11)
+- **GameState**: Mutable wrapper for canvas with `advance()` method
 
-- **GameState** / **Game3DState**: Mutable wrappers that hold a canvas/universe and provide `advance()` to compute the next generation.
+### Client Module (`client/`)
 
-- **Universe** / **Layers**: 3D game management. `Universe` contains `Layers`, which is a sequence of `Canvas` objects representing vertical slices. Each 3D canvas knows its layer index and can access neighbors via the `Layers` reference.
+Scala.js browser client that runs game logic locally:
+
+- **GameClient**: Exported to JavaScript with methods:
+  - `init(width, height)`: Initialize random grid
+  - `step()`: Advance one generation
+  - `startAnimation(callback)`: Run at 60fps
+  - `stopAnimation()`: Stop animation
+  - `getFps()`: Get current FPS
+
+### Server Module (`server/`)
+
+Play Framework server with 3D-specific code:
+
+- **Controllers**: HTTP endpoints for reset/state
+- **3D Models**: `Vector3dCanvas`, `Universe`, `Layers` (JVM-only, uses Futures)
+- **Views**: HTML templates
 
 ### Type Aliases (`package.scala`)
 
@@ -57,25 +109,14 @@ type VC = Vector[Cell]
 type VVC = Vector[Vector[Cell]]
 ```
 
-### Controllers (`app/controllers/`)
-
-- **LifeController**: Manages 2D game state per session using Guava cache. Endpoints: `GET /life`, `POST /reset/height/:height/width/:width`
-- **ThreedController**: Manages 3D game state. Endpoints: `GET /threed/life`, `POST /threed/reset/layers/:layers/height/:height/width/:width`
-- **MainController**: Serves the main index page (Java)
-
-State is stored per-session using session cookies as keys into an in-memory Guava cache with 1-hour expiration.
-
-### Frontend (`app/assets/javascripts/`)
-
-- `index.js` / `draw.js`: 2D canvas rendering and animation loop
-- `3dindex.js` / `3ddraw.js`: Three.js-based 3D rendering
-
 ## Tech Stack
 
 - Scala 2.13.16
 - Play Framework 3.0.6
+- Scala.js 1.17.0
 - SBT 1.10.6
-- ScalaTest 3.2.19 for testing
+- ScalaTest 3.2.19
+- scalajs-dom 2.8.0
 - Three.js for 3D visualization
 - Guava 33.4.0-jre for caching
 - Bootstrap 5.3.3 via WebJars
@@ -84,6 +125,8 @@ State is stored per-session using session cookies as keys into an in-memory Guav
 
 **MANDATORY: Follow these rules when making changes:**
 
-1. **Run tests after every code change**: After modifying any code, always run `sbt test` to ensure all tests pass before proceeding.
+1. **Run tests after every code change**: After modifying any code, always run `sbt server/test` to ensure all tests pass before proceeding.
 
-2. **Commit after each successful phase**: When completing a logical unit of work (e.g., a feature, bugfix, or upgrade phase), commit changes to git with a descriptive message.
+2. **Recompile Scala.js after client changes**: After modifying `client/` or `shared/` code, run `sbt client/fastLinkJS` to regenerate the JavaScript.
+
+3. **Commit after each successful phase**: When completing a logical unit of work, commit changes to git with a descriptive message.
