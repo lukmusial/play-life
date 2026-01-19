@@ -7,20 +7,20 @@ case class Vector2dCanvas(override val canvas: VVC, override val changedCells: S
   extends Finite2dCanvas[VC, VVC] {
 
   protected def stagedCells: VVC = {
+    // Fast path: if nothing changed, nothing will change
+    if (changedCells.isEmpty) return canvas
+
     val height = canvas.length
     val width = if (height > 0) canvas(0).length else 0
     val result = new Array[Vector[Cell]](height)
 
+    // Compute all cells - the per-cell haveNeighborsChanged check is too slow
     var i = 0
     while (i < height) {
       val rowBuffer = new Array[Cell](width)
       var j = 0
       while (j < width) {
-        rowBuffer(j) = if (haveNeighborsChanged(i, j)) {
-          getCell(i, j).stage(getNeighbors(i, j), strategy)
-        } else {
-          getCell(i, j)
-        }
+        rowBuffer(j) = getCell(i, j).stage(getNeighbors(i, j), strategy)
         j += 1
       }
       result(i) = rowBuffer.toVector
