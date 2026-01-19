@@ -1,31 +1,61 @@
 package models.com.bulba.canvas
 
 import models.com.bulba.{Cell, VC, VVC}
+import scala.collection.mutable.ArrayBuffer
 
 case class Vector2dCanvas(override val canvas: VVC, override val changedCells: Set[(Int, Int)])
   extends Finite2dCanvas[VC, VVC] {
 
   protected def stagedCells: VVC = {
-    val staged = for (i <- canvas.indices) yield {
-      val row = canvas(i).indices.foldLeft(Vector.empty[Cell]) { (acc, j) =>
-        haveNeighborsChanged(i, j) match {
-          case true => acc :+ getCell(i, j).stage(getNeighbors(i, j), strategy)
-          case false => acc :+ getCell(i, j)
+    val height = canvas.length
+    val width = if (height > 0) canvas(0).length else 0
+    val result = new Array[Vector[Cell]](height)
+
+    var i = 0
+    while (i < height) {
+      val rowBuffer = new Array[Cell](width)
+      var j = 0
+      while (j < width) {
+        rowBuffer(j) = if (haveNeighborsChanged(i, j)) {
+          getCell(i, j).stage(getNeighbors(i, j), strategy)
+        } else {
+          getCell(i, j)
         }
+        j += 1
       }
-      row
+      result(i) = rowBuffer.toVector
+      i += 1
     }
-    staged.toVector
+    result.toVector
   }
 
   def stage(): Vector2dCanvas = {
     val staged = stagedCells
-    val changed = for (x <- staged.indices; y <- staged(x).indices; if canvas(x)(y) != staged(x)(y)) yield (x, y)
-    Vector2dCanvas(staged, changed.toSet)
+    val changedBuffer = ArrayBuffer.empty[(Int, Int)]
+    var x = 0
+    while (x < staged.length) {
+      var y = 0
+      while (y < staged(x).length) {
+        if (canvas(x)(y) != staged(x)(y)) {
+          changedBuffer += ((x, y))
+        }
+        y += 1
+      }
+      x += 1
+    }
+    Vector2dCanvas(staged, changedBuffer.toSet)
   }
 
   override def haveNeighborsChanged(x: Int, y: Int): Boolean = {
-    for { i1 <- x - 1 to x + 1; y1 <- y - 1 to y + 1 } if (changedCells.contains((i1, y1))) return true
+    var i1 = x - 1
+    while (i1 <= x + 1) {
+      var y1 = y - 1
+      while (y1 <= y + 1) {
+        if (changedCells.contains((i1, y1))) return true
+        y1 += 1
+      }
+      i1 += 1
+    }
     false
   }
 }
