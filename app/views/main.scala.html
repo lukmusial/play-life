@@ -4,11 +4,11 @@
 <html>
 <head>
     <title>@title</title>
-    <link rel='stylesheet' href='@webJarsUtil.locate("bootstrap.min.css")'>
-    <link rel='stylesheet' href='@routes.Assets.versioned("stylesheets/index.css")'>
-    <script type='text/javascript' src='@webJarsUtil.locate("jquery.min.js")'></script>
+    <link rel='stylesheet' href='@webJarsUtil.locate("bootstrap.min.css").url'>
+    <link rel='stylesheet' href='@routes.Assets.at("stylesheets/index.css")'>
+    <script type='text/javascript' src='@webJarsUtil.locate("jquery.min.js").url'></script>
     <script type="text/javascript" src="@routes.LifeController.javascriptRoutes()"></script>
-    <script type="text/javascript" src='@routes.Assets.versioned("javascripts/draw.js")'></script>
+    <script type="text/javascript" src='@routes.Assets.at("javascripts/draw.js")'></script>
 
 </head>
 <body onload="resetButton.click()">
