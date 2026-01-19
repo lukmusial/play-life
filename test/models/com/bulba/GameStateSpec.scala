@@ -1,11 +1,11 @@
 package models.com.bulba
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import models.com.bulba.canvas.StringCanvas
 
 
-class GameStateSpec extends FlatSpec with ShouldMatchers {
+class GameStateSpec extends AnyFlatSpec with Matchers {
   val entry1Canvas = """
     0000
     0010
@@ -55,9 +55,5 @@ class GameStateSpec extends FlatSpec with ShouldMatchers {
     canvas should be (resultCanvas)
     canvas should not be StringCanvas(entry2Canvas)
   }
-
-
-
-
 
 }

@@ -1,9 +1,9 @@
 package models.com.bulba
 
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class UniversePerformanceSpec extends FlatSpec with ShouldMatchers{
+class UniversePerformanceSpec extends AnyFlatSpec with Matchers {
 
   "universe" should "stage in 10 seconds" in {
     val universes = for (i <- 0 until 10) yield new Game3DState(Universe(10,50,50))

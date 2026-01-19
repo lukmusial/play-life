@@ -1,11 +1,11 @@
 package models.com.bulba.canvas
 
-import org.scalatest.{FlatSpec}
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import models.com.bulba.stagingstrategy.StagingStrategy
 import models.com.bulba.{LiveCell, DeadCell, Cell}
 
-class CanvasSpec extends FlatSpec with ShouldMatchers {
+class CanvasSpec extends AnyFlatSpec with Matchers {
 
 
   "Canvas" should "encode cells to a sequence of characters" in {
@@ -17,13 +17,13 @@ class CanvasSpec extends FlatSpec with ShouldMatchers {
       Vector(LiveCell, LiveCell, DeadCell, DeadCell, DeadCell, DeadCell, DeadCell, DeadCell, LiveCell)
     )
     val testCanvas = new TestCanvas(canvas).toHex.iterator
-    testCanvas.next should be("5")
-    testCanvas.next should be("8")
-    testCanvas.next.charAt(0).asInstanceOf[Int] should be (3)
-    testCanvas.next.charAt(0).asInstanceOf[Int] should be (0)
-    testCanvas.next.charAt(0).asInstanceOf[Int] should be (255)
-    testCanvas.next.charAt(0).asInstanceOf[Int] should be (15)
-    val lastCanvas = testCanvas.next
+    testCanvas.next() should be("5")
+    testCanvas.next() should be("8")
+    testCanvas.next().charAt(0).asInstanceOf[Int] should be (3)
+    testCanvas.next().charAt(0).asInstanceOf[Int] should be (0)
+    testCanvas.next().charAt(0).asInstanceOf[Int] should be (255)
+    testCanvas.next().charAt(0).asInstanceOf[Int] should be (15)
+    val lastCanvas = testCanvas.next()
     lastCanvas.charAt(0).asInstanceOf[Int] should be (192)
     lastCanvas.charAt(1).asInstanceOf[Int] should be (1)
   }

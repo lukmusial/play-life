@@ -1,17 +1,20 @@
 package test
 
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.play._
+import org.scalatestplus.play.guice._
 import play.api.test._
 import play.api.test.Helpers._
-import org.scalatest.WordSpec
-import org.scalatest.matchers.ShouldMatchers
 
 
-class LifeControllerSpec extends WordSpec with ShouldMatchers{
-  
+class LifeControllerSpec extends AnyWordSpec with Matchers with GuiceOneAppPerTest with Injecting {
+
   "LifeController" should {
-    
-    "getState should return JSON" in new WithApplication {
-      val result = controllers.LifeController.getState(FakeRequest().withSession("state" -> "dummy"))
+
+    "getState should return JSON" in {
+      val controller = inject[controllers.LifeController]
+      val result = controller.getState(FakeRequest().withSession("state" -> "dummy"))
 
       status(result) shouldEqual OK
       contentType(result) should be(Some("application/json"))
