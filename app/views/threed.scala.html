@@ -1,14 +1,15 @@
+@()(implicit webJarsUtil: org.webjars.play.WebJarsUtil)
 
 <!DOCTYPE html>
 <html>
 <head>
     <title>Three D</title>
-    <link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("bootstrap.min.css"))'>
-    <link rel='stylesheet' href='@routes.Assets.at("stylesheets/index.css")'>
-    <script type='text/javascript' src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
+    <link rel='stylesheet' href='@webJarsUtil.locate("bootstrap.min.css")'>
+    <link rel='stylesheet' href='@routes.Assets.versioned("stylesheets/index.css")'>
+    <script type='text/javascript' src='@webJarsUtil.locate("jquery.min.js")'></script>
     <script type="text/javascript" src="@routes.LifeController.javascriptRoutes"></script>
-    <script type="text/javascript"  src='@routes.Assets.at("javascripts/three.js")'></script>
-    <script type="text/javascript"  src='@routes.Assets.at("javascripts/parallel.js")'></script>
+    <script type="text/javascript"  src='@routes.Assets.versioned("javascripts/three.js")'></script>
+    <script type="text/javascript"  src='@routes.Assets.versioned("javascripts/parallel.js")'></script>
 </head>
 <body onload="resetButton.click()">
 <button class="button" id="autoRefreshButton">Auto Refresh</button>
@@ -48,7 +49,7 @@
 
 </script>
 
-    <script type='text/javascript' src='@routes.Assets.at("javascripts/3dindex.js")'></script>
-    <script type="text/javascript" src='@routes.Assets.at("javascripts/3ddraw.js")'></script>
+    <script type='text/javascript' src='@routes.Assets.versioned("javascripts/3dindex.js")'></script>
+    <script type="text/javascript" src='@routes.Assets.versioned("javascripts/3ddraw.js")'></script>
 </body>
 </html>
