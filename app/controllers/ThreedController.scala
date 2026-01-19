@@ -26,11 +26,11 @@ class ThreedController @Inject()(
 
   def getState = Action {
     implicit request =>
-      session.get("state") match {
+      request.session.get("state") match {
 
         case Some(sessionState) =>
           if (!states.contains(sessionState)) {
-            resetHelper(session.get("layers").map(_.toInt).getOrElse(20), session.get("height").map(_.toInt).getOrElse(300), session.get("width").map(_.toInt).getOrElse(424))
+            resetHelper(request.session.get("layers").map(_.toInt).getOrElse(20), request.session.get("height").map(_.toInt).getOrElse(300), request.session.get("width").map(_.toInt).getOrElse(424))
           } else {
             val state = states(sessionState)
             states += (sessionState -> state)
@@ -47,7 +47,7 @@ class ThreedController @Inject()(
 
 
   def resetHelper(layers: Int, height: Int, width: Int)(implicit request: Request[AnyContent]): Result = {
-    session.get("state") match {
+    request.session.get("state") match {
 
       case Some(sessionState) =>
         states += (sessionState -> new Game3DState[VC, VVC](Universe(layers, width, height)))

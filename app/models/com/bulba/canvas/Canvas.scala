@@ -30,7 +30,7 @@ trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
         Seq(java.lang.Long.parseLong(rows._1.mkString, 2)) ++ rowToSeqLong(rows._2)
       } else Seq(java.lang.Long.parseLong(row.mkString, 2))
     }
-    canvas.par.map(rowToSeqLong(_)).toSeq
+    canvas.par.map(rowToSeqLong(_)).seq
   }
 
   def toHex: Seq[String] = {
@@ -43,7 +43,7 @@ trait Canvas[+S <: Seq[Cell], +T <: Seq[S]] {
       }
     }
 
-    Seq(canvas.length.toString, canvas.head.length.toString) ++ canvas.par.map(rowToHex(_)).toSeq
+    Seq(canvas.length.toString, canvas.head.length.toString) ++ canvas.par.map(rowToHex(_)).seq
   }
 
   def stage(): Canvas[S, T]
