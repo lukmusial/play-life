@@ -6,6 +6,7 @@ scalaVersion := "2.13.16"
 
 libraryDependencies ++= Seq(
   guice,
+  ws,
   "org.webjars" %% "webjars-play" % "3.0.1",
   "org.webjars" % "bootstrap" % "5.3.3",
   "org.webjars" % "jquery" % "3.7.1",
