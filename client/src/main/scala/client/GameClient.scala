@@ -192,8 +192,16 @@ object GameClient {
 
       // Advance simulation and render directly
       gameState.foreach { gs =>
+        val t0 = window.performance.now()
         gs.advance()
-        renderDirect()
+        val t1 = window.performance.now()
+        renderFullFast()
+        val t2 = window.performance.now()
+
+        // Log timing every second
+        if (frameCount == 0) {
+          dom.console.log(s"advance: ${t1-t0}ms, render: ${t2-t1}ms")
+        }
       }
 
       // Update FPS counter
@@ -308,6 +316,38 @@ object GameClient {
 
       fadingCells.clear()
       cachedCtx.putImageData(cachedImageData, 0, 0)
+    }
+  }
+
+  /**
+   * Fast full render optimized for animation.
+   * No fade effect - just alive/dead colors.
+   */
+  private def renderFullFast(): Unit = {
+    if (cachedCtx == null || cachedPixels32 == null) return
+
+    gameState match {
+      case Some(gs) =>
+        val canvasData = gs.canvas.canvas
+        val canvasWidth = cachedImageData.width
+        val height = canvasData.length
+
+        var row = 0
+        while (row < height) {
+          val rowData = canvasData(row)
+          val width = rowData.length
+          val rowOffset = row * canvasWidth
+          var col = 0
+          while (col < width) {
+            val color = if (rowData(col) == LiveCell) ALIVE_COLOR else DEAD_COLOR
+            cachedPixels32(rowOffset + col) = color
+            col += 1
+          }
+          row += 1
+        }
+
+        cachedCtx.putImageData(cachedImageData, 0, 0)
+      case None => ()
     }
   }
 
