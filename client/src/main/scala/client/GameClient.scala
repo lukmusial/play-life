@@ -37,6 +37,11 @@ object GameClient {
   private var gridWidth: Int = 0
   private var gridHeight: Int = 0
 
+  // Fast path: typed arrays for game state (bypasses Scala collections)
+  private var grid: Uint8Array = _
+  private var nextGrid: Uint8Array = _
+  private var useFastPath: Boolean = true
+
   // Precomputed colors as 32-bit ABGR values (little-endian)
   private val ALIVE_COLOR: Int = 0xFFE6CA77  // #77CAE6 with alpha 255
   private val DEAD_COLOR: Int = 0xFF000000   // Black with alpha 255
@@ -72,15 +77,92 @@ object GameClient {
    */
   @JSExport
   def initOptimized(width: Int, height: Int): Unit = {
-    val canvas = RandomCanvas(width, height)
-    gameState = Some(new GameState(canvas))
     running = false
     frameCount = 0
     lastFpsUpdate = window.performance.now()
-    gridWidth = width
-    gridHeight = height
+    gridWidth = height  // Note: width/height are swapped in the data model
+    gridHeight = width
+
+    // Initialize fast path typed arrays
+    val size = gridWidth * gridHeight
+    grid = new Uint8Array(size)
+    nextGrid = new Uint8Array(size)
+
+    // Random initialization
+    var i = 0
+    while (i < size) {
+      grid(i) = if (js.Math.random() > 0.9) 1 else 0
+      i += 1
+    }
+
     initRenderCache()
-    renderFull()  // Full render for initial display
+    renderFromTypedArray()
+  }
+
+  /**
+   * Fast advance using typed arrays - no Scala object allocation.
+   */
+  private def advanceFast(): Unit = {
+    var row = 0
+    while (row < gridWidth) {
+      var col = 0
+      while (col < gridHeight) {
+        val idx = row * gridHeight + col
+        val neighbors = countNeighbors(row, col)
+        val alive = grid(idx) == 1
+
+        nextGrid(idx) = if (alive) {
+          if (neighbors == 2 || neighbors == 3) 1 else 0
+        } else {
+          if (neighbors == 3) 1 else 0
+        }
+        col += 1
+      }
+      row += 1
+    }
+
+    // Swap grids
+    val temp = grid
+    grid = nextGrid
+    nextGrid = temp
+  }
+
+  private def countNeighbors(row: Int, col: Int): Int = {
+    var count = 0
+    var dr = -1
+    while (dr <= 1) {
+      var dc = -1
+      while (dc <= 1) {
+        if (!(dr == 0 && dc == 0)) {
+          val r = row + dr
+          val c = col + dc
+          if (r >= 0 && r < gridWidth && c >= 0 && c < gridHeight) {
+            count += grid(r * gridHeight + c)
+          }
+        }
+        dc += 1
+      }
+      dr += 1
+    }
+    count
+  }
+
+  private def renderFromTypedArray(): Unit = {
+    if (cachedCtx == null || cachedPixels32 == null) return
+
+    val canvasWidth = cachedImageData.width
+    var row = 0
+    while (row < gridWidth) {
+      val rowOffset = row * canvasWidth
+      var col = 0
+      while (col < gridHeight) {
+        val alive = grid(row * gridHeight + col) == 1
+        cachedPixels32(rowOffset + col) = if (alive) ALIVE_COLOR else DEAD_COLOR
+        col += 1
+      }
+      row += 1
+    }
+    cachedCtx.putImageData(cachedImageData, 0, 0)
   }
 
   private def initRenderCache(): Unit = {
@@ -190,18 +272,15 @@ object GameClient {
     def animateOptimized(timestamp: Double): Unit = {
       if (!running) return
 
-      // Advance simulation and render directly
-      gameState.foreach { gs =>
-        val t0 = window.performance.now()
-        gs.advance()
-        val t1 = window.performance.now()
-        renderFullFast()
-        val t2 = window.performance.now()
+      val t0 = window.performance.now()
+      advanceFast()
+      val t1 = window.performance.now()
+      renderFromTypedArray()
+      val t2 = window.performance.now()
 
-        // Log timing every second
-        if (frameCount == 0) {
-          dom.console.log(s"advance: ${t1-t0}ms, render: ${t2-t1}ms")
-        }
+      // Log timing every second
+      if (frameCount == 0) {
+        dom.console.log(s"advance: ${t1-t0}ms, render: ${t2-t1}ms")
       }
 
       // Update FPS counter
@@ -356,9 +435,9 @@ object GameClient {
    */
   @JSExport
   def stepOptimized(): Unit = {
-    gameState.foreach { gs =>
-      gs.advance()
-      renderDirect()
+    if (grid != null) {
+      advanceFast()
+      renderFromTypedArray()
     }
   }
 
