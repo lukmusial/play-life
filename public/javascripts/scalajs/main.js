@@ -1013,6 +1013,62 @@ var $d_I = new $TypeData().initPrim(0, "I", "int", $ac_I, Int32Array);
 var $d_J = new $TypeData().initPrim(null, "J", "long", $ac_J, (void 0));
 var $d_F = new $TypeData().initPrim(0.0, "F", "float", $ac_F, Float32Array);
 var $d_D = new $TypeData().initPrim(0.0, "D", "double", $ac_D, Float64Array);
+function $p_Lclient_GameClient$__advanceFast__V($thiz) {
+  var row = 0;
+  while ((row < $thiz.Lclient_GameClient$__f_gridWidth)) {
+    var col = 0;
+    while ((col < $thiz.Lclient_GameClient$__f_gridHeight)) {
+      var idx = ((Math.imul(row, $thiz.Lclient_GameClient$__f_gridHeight) + col) | 0);
+      var neighbors = $p_Lclient_GameClient$__countNeighbors__I__I__I($thiz, row, col);
+      var alive = ($uS($thiz.Lclient_GameClient$__f_grid[idx]) === 1);
+      $thiz.Lclient_GameClient$__f_nextGrid[idx] = (alive ? (((neighbors === 2) || (neighbors === 3)) ? 1 : 0) : ((neighbors === 3) ? 1 : 0));
+      col = ((1 + col) | 0);
+    }
+    row = ((1 + row) | 0);
+  }
+  var temp = $thiz.Lclient_GameClient$__f_grid;
+  $thiz.Lclient_GameClient$__f_grid = $thiz.Lclient_GameClient$__f_nextGrid;
+  $thiz.Lclient_GameClient$__f_nextGrid = temp;
+}
+function $p_Lclient_GameClient$__countNeighbors__I__I__I($thiz, row, col) {
+  var count = 0;
+  var dr = (-1);
+  while ((dr <= 1)) {
+    var dc = (-1);
+    while ((dc <= 1)) {
+      if ((!((dr === 0) && (dc === 0)))) {
+        var r = ((row + dr) | 0);
+        var c = ((col + dc) | 0);
+        if (((((r >= 0) && (r < $thiz.Lclient_GameClient$__f_gridWidth)) && (c >= 0)) && (c < $thiz.Lclient_GameClient$__f_gridHeight))) {
+          count = ((count + $uS($thiz.Lclient_GameClient$__f_grid[((Math.imul(r, $thiz.Lclient_GameClient$__f_gridHeight) + c) | 0)])) | 0);
+        }
+      }
+      dc = ((1 + dc) | 0);
+    }
+    dr = ((1 + dr) | 0);
+  }
+  return count;
+}
+function $p_Lclient_GameClient$__renderFromTypedArray__V($thiz) {
+  if ((($thiz.Lclient_GameClient$__f_cachedCtx === null) || ($thiz.Lclient_GameClient$__f_cachedPixels32 === null))) {
+    return (void 0);
+  }
+  var canvasWidth = $uI($thiz.Lclient_GameClient$__f_cachedImageData.width);
+  var row = 0;
+  while ((row < $thiz.Lclient_GameClient$__f_gridWidth)) {
+    var rowOffset = Math.imul(row, canvasWidth);
+    var col = 0;
+    while ((col < $thiz.Lclient_GameClient$__f_gridHeight)) {
+      var alive = ($uS($thiz.Lclient_GameClient$__f_grid[((Math.imul(row, $thiz.Lclient_GameClient$__f_gridHeight) + col) | 0)]) === 1);
+      $thiz.Lclient_GameClient$__f_cachedPixels32[((rowOffset + col) | 0)] = (alive ? $thiz.Lclient_GameClient$__f_ALIVE_COLOR : $thiz.Lclient_GameClient$__f_DEAD_COLOR);
+      col = ((1 + col) | 0);
+    }
+    row = ((1 + row) | 0);
+  }
+  var qual$1 = $thiz.Lclient_GameClient$__f_cachedCtx;
+  var x$1 = $thiz.Lclient_GameClient$__f_cachedImageData;
+  qual$1.putImageData(x$1, 0.0, 0.0);
+}
 function $p_Lclient_GameClient$__initRenderCache__V($thiz) {
   var canvasEl = document.getElementById("canvas");
   if ((canvasEl !== null)) {
@@ -1034,156 +1090,6 @@ function $p_Lclient_GameClient$__initRenderCache__V($thiz) {
         }
         i = ((1 + i) | 0);
       }
-    }
-  }
-}
-function $p_Lclient_GameClient$__renderDirect__V($thiz) {
-  if ((($thiz.Lclient_GameClient$__f_cachedCtx === null) || ($thiz.Lclient_GameClient$__f_cachedPixels32 === null))) {
-    return (void 0);
-  }
-  var this$1 = $n($thiz.Lclient_GameClient$__f_gameState);
-  if ((!this$1.isEmpty__Z())) {
-    var arg1 = this$1.get__O();
-    var gs = $as_Lmodels_com_bulba_GameState(arg1);
-    var canvasData = $n($n(gs).Lmodels_com_bulba_GameState__f_canvas).canvas__sci_Vector();
-    var canvasWidth = $uI($m_Lclient_GameClient$().Lclient_GameClient$__f_cachedImageData.width);
-    var changedCells = $n($n(gs).Lmodels_com_bulba_GameState__f_canvas).changedCells__sci_Set();
-    var newFading = $as_scm_Set($m_scm_Set$().empty__O());
-    $n(changedCells).foreach__F1__V(new $c_sjsr_AnonFunction1(((x0$1$2) => {
-      var x0$1 = $as_T2(x0$1$2);
-      if ((x0$1 !== null)) {
-        var row = $n(x0$1)._1$mcI$sp__I();
-        var col = $n(x0$1)._2$mcI$sp__I();
-        if (((((row >= 0) && (row < $n(canvasData).length__I())) && (col >= 0)) && (col < $n($as_sc_SeqOps($n(canvasData).apply__I__O(row))).length__I()))) {
-          var pixelIdx = ((Math.imul(row, canvasWidth) + col) | 0);
-          var cell = $as_Lmodels_com_bulba_Cell($n($as_sc_SeqOps($n(canvasData).apply__I__O(row))).apply__I__O(col));
-          if ($n(cell).isAlive__Z()) {
-            $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx] = $m_Lclient_GameClient$().Lclient_GameClient$__f_ALIVE_COLOR;
-            return (void 0);
-          } else {
-            $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx] = $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(0);
-            var this$3 = $n(newFading);
-            var elem = new $c_T2$mcII$sp(row, col);
-            this$3.add__O__Z(elem);
-            return this$3;
-          }
-        } else {
-          return (void 0);
-        }
-      } else {
-        throw new $c_s_MatchError(x0$1);
-      }
-    })));
-    var stillFading = $as_scm_Set($m_scm_Set$().empty__O());
-    $n($m_Lclient_GameClient$().Lclient_GameClient$__f_fadingCells).foreach__F1__V(new $c_sjsr_AnonFunction1(((x0$2$2) => {
-      var x0$2 = $as_T2(x0$2$2);
-      if ((x0$2 !== null)) {
-        var row$1 = $n(x0$2)._1$mcI$sp__I();
-        var col$1 = $n(x0$2)._2$mcI$sp__I();
-        if (((((row$1 >= 0) && (row$1 < $n(canvasData).length__I())) && (col$1 >= 0)) && (col$1 < $n($as_sc_SeqOps($n(canvasData).apply__I__O(row$1))).length__I()))) {
-          var pixelIdx$1 = ((Math.imul(row$1, canvasWidth) + col$1) | 0);
-          var cell$1 = $as_Lmodels_com_bulba_Cell($n($as_sc_SeqOps($n(canvasData).apply__I__O(row$1))).apply__I__O(col$1));
-          if ($n(cell$1).isAlive__Z()) {
-            $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx$1] = $m_Lclient_GameClient$().Lclient_GameClient$__f_ALIVE_COLOR;
-            return (void 0);
-          } else if ((!$n(changedCells).contains__O__Z(new $c_T2$mcII$sp(row$1, col$1)))) {
-            var currentColor = $uD($m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx$1]);
-            var newColor = ((currentColor === $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(0)) ? $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(1) : ((currentColor === $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(1)) ? $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(2) : ((currentColor === $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(2)) ? $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(3) : ((currentColor === $n($m_Lclient_GameClient$().Lclient_GameClient$__f_FADE_COLORS).get(3)) ? $m_Lclient_GameClient$().Lclient_GameClient$__f_DEAD_COLOR : $m_Lclient_GameClient$().Lclient_GameClient$__f_DEAD_COLOR))));
-            $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx$1] = newColor;
-            if ((newColor !== $m_Lclient_GameClient$().Lclient_GameClient$__f_DEAD_COLOR)) {
-              var this$4 = $n(stillFading);
-              var elem$1 = new $c_T2$mcII$sp(row$1, col$1);
-              this$4.add__O__Z(elem$1);
-              return this$4;
-            } else {
-              return (void 0);
-            }
-          } else {
-            return (void 0);
-          }
-        } else {
-          return (void 0);
-        }
-      } else {
-        throw new $c_s_MatchError(x0$2);
-      }
-    })));
-    var $x_1 = $m_Lclient_GameClient$();
-    var this$5 = $n(stillFading);
-    $x_1.Lclient_GameClient$__f_fadingCells = $as_scm_Set(this$5.concat__sc_IterableOnce__sc_SetOps(newFading));
-    var qual$1 = $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedCtx;
-    var x$1 = $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedImageData;
-    qual$1.putImageData(x$1, 0.0, 0.0);
-  }
-}
-function $p_Lclient_GameClient$__renderFull__V($thiz) {
-  if ((($thiz.Lclient_GameClient$__f_cachedCtx === null) || ($thiz.Lclient_GameClient$__f_cachedPixels32 === null))) {
-    return (void 0);
-  }
-  var this$1 = $n($thiz.Lclient_GameClient$__f_gameState);
-  if ((!this$1.isEmpty__Z())) {
-    var arg1 = this$1.get__O();
-    var gs = $as_Lmodels_com_bulba_GameState(arg1);
-    var canvasData = $n($n(gs).Lmodels_com_bulba_GameState__f_canvas).canvas__sci_Vector();
-    var canvasWidth = $uI($m_Lclient_GameClient$().Lclient_GameClient$__f_cachedImageData.width);
-    var row = 0;
-    while ((row < $n(canvasData).length__I())) {
-      var rowData = $as_sci_Seq($n(canvasData).apply__I__O(row));
-      var col = 0;
-      while ((col < $n(rowData).length__I())) {
-        var pixelIdx = ((Math.imul(row, canvasWidth) + col) | 0);
-        if ($n($as_Lmodels_com_bulba_Cell($n(rowData).apply__I__O(col))).isAlive__Z()) {
-          $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx] = $m_Lclient_GameClient$().Lclient_GameClient$__f_ALIVE_COLOR;
-        } else {
-          $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedPixels32[pixelIdx] = $m_Lclient_GameClient$().Lclient_GameClient$__f_DEAD_COLOR;
-        }
-        col = ((1 + col) | 0);
-      }
-      row = ((1 + row) | 0);
-    }
-    $n($m_Lclient_GameClient$().Lclient_GameClient$__f_fadingCells).clear__V();
-    var qual$1 = $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedCtx;
-    var x$1 = $m_Lclient_GameClient$().Lclient_GameClient$__f_cachedImageData;
-    qual$1.putImageData(x$1, 0.0, 0.0);
-  }
-}
-function $p_Lclient_GameClient$__renderFullFast__V($thiz) {
-  if ((($thiz.Lclient_GameClient$__f_cachedCtx === null) || ($thiz.Lclient_GameClient$__f_cachedPixels32 === null))) {
-    return (void 0);
-  }
-  var x1 = $thiz.Lclient_GameClient$__f_gameState;
-  if ((x1 instanceof $c_s_Some)) {
-    var x2 = $as_s_Some(x1);
-    var gs = $as_Lmodels_com_bulba_GameState($n(x2).s_Some__f_value);
-    var canvasData = $n($n(gs).Lmodels_com_bulba_GameState__f_canvas).canvas__sci_Vector();
-    var canvasWidth = $uI($thiz.Lclient_GameClient$__f_cachedImageData.width);
-    var height = $n(canvasData).length__I();
-    var row = 0;
-    while ((row < height)) {
-      var rowData = $as_sci_Seq($n(canvasData).apply__I__O(row));
-      var width = $n(rowData).length__I();
-      var rowOffset = Math.imul(row, canvasWidth);
-      var col = 0;
-      while ((col < width)) {
-        var x = $n(rowData).apply__I__O(col);
-        var x$2 = $m_Lmodels_com_bulba_LiveCell$();
-        if (((x !== null) && $dp_equals__O__Z($n(x), x$2))) {
-          var color = $thiz.Lclient_GameClient$__f_ALIVE_COLOR;
-        } else {
-          var color = $thiz.Lclient_GameClient$__f_DEAD_COLOR;
-        }
-        $thiz.Lclient_GameClient$__f_cachedPixels32[((rowOffset + col) | 0)] = color;
-        col = ((1 + col) | 0);
-      }
-      row = ((1 + row) | 0);
-    }
-    var qual$1 = $thiz.Lclient_GameClient$__f_cachedCtx;
-    var x$1 = $thiz.Lclient_GameClient$__f_cachedImageData;
-    qual$1.putImageData(x$1, 0.0, 0.0);
-  } else {
-    var x$4 = $m_s_None$();
-    if ((!(x$4 === x1))) {
-      throw new $c_s_MatchError(x1);
     }
   }
 }
@@ -1247,18 +1153,13 @@ function $p_Lclient_GameClient$__animateOptimized$1__D__V($thiz, timestamp) {
   if ((!$thiz.Lclient_GameClient$__f_running)) {
     return (void 0);
   }
-  var this$1 = $n($thiz.Lclient_GameClient$__f_gameState);
-  if ((!this$1.isEmpty__Z())) {
-    var arg1 = this$1.get__O();
-    var gs = $as_Lmodels_com_bulba_GameState(arg1);
-    var t0 = $uD(window.performance.now());
-    $n(gs).advance__V();
-    var t1 = $uD(window.performance.now());
-    $p_Lclient_GameClient$__renderFullFast__V($m_Lclient_GameClient$());
-    var t2 = $uD(window.performance.now());
-    if (($m_Lclient_GameClient$().Lclient_GameClient$__f_frameCount === 0)) {
-      console.log((((("advance: " + (t1 - t0)) + "ms, render: ") + (t2 - t1)) + "ms"));
-    }
+  var t0 = $uD(window.performance.now());
+  $p_Lclient_GameClient$__advanceFast__V($thiz);
+  var t1 = $uD(window.performance.now());
+  $p_Lclient_GameClient$__renderFromTypedArray__V($thiz);
+  var t2 = $uD(window.performance.now());
+  if (($thiz.Lclient_GameClient$__f_frameCount === 0)) {
+    console.log((((("advance: " + (t1 - t0)) + "ms, render: ") + (t2 - t1)) + "ms"));
   }
   $thiz.Lclient_GameClient$__f_frameCount = ((1 + $thiz.Lclient_GameClient$__f_frameCount) | 0);
   var elapsed = (timestamp - $thiz.Lclient_GameClient$__f_lastFpsUpdate);
@@ -1270,9 +1171,9 @@ function $p_Lclient_GameClient$__animateOptimized$1__D__V($thiz, timestamp) {
   }
   $thiz.Lclient_GameClient$__f_lastFrameTime = timestamp;
   $thiz.Lclient_GameClient$__f_animationFrameId = $uI(window.requestAnimationFrame(((arg1$2) => {
-    var arg1$1 = $uD(arg1$2);
-    var this$2 = $m_Lclient_GameClient$();
-    $p_Lclient_GameClient$__animateOptimized$1__D__V(this$2, arg1$1);
+    var arg1 = $uD(arg1$2);
+    var this$1 = $m_Lclient_GameClient$();
+    $p_Lclient_GameClient$__animateOptimized$1__D__V(this$1, arg1);
   })));
 }
 /** @constructor */
@@ -1287,10 +1188,12 @@ function $c_Lclient_GameClient$() {
   this.Lclient_GameClient$__f_cachedImageData = null;
   this.Lclient_GameClient$__f_cachedPixels32 = null;
   this.Lclient_GameClient$__f_cachedCtx = null;
+  this.Lclient_GameClient$__f_gridWidth = 0;
+  this.Lclient_GameClient$__f_gridHeight = 0;
+  this.Lclient_GameClient$__f_grid = null;
+  this.Lclient_GameClient$__f_nextGrid = null;
   this.Lclient_GameClient$__f_ALIVE_COLOR = 0;
   this.Lclient_GameClient$__f_DEAD_COLOR = 0;
-  this.Lclient_GameClient$__f_FADE_COLORS = null;
-  this.Lclient_GameClient$__f_fadingCells = null;
   this.Lclient_GameClient$__f_useOptimizedRendering = false;
   $n_Lclient_GameClient$ = this;
   this.Lclient_GameClient$__f_gameState = $m_s_None$();
@@ -1300,10 +1203,11 @@ function $c_Lclient_GameClient$() {
   this.Lclient_GameClient$__f_currentFps = 0;
   this.Lclient_GameClient$__f_lastFpsUpdate = 0.0;
   this.Lclient_GameClient$__f_animationFrameId = 0;
+  this.Lclient_GameClient$__f_gridWidth = 0;
+  this.Lclient_GameClient$__f_gridHeight = 0;
   this.Lclient_GameClient$__f_ALIVE_COLOR = (-1652105);
   this.Lclient_GameClient$__f_DEAD_COLOR = (-16777216);
-  this.Lclient_GameClient$__f_FADE_COLORS = new $ac_I(new Int32Array([(-1259943305), (-1931031945), 1692846711, 853985911]));
-  this.Lclient_GameClient$__f_fadingCells = $as_scm_Set($m_scm_Set$().empty__O());
+  $as_scm_Set($m_scm_Set$().empty__O());
   this.Lclient_GameClient$__f_useOptimizedRendering = false;
 }
 $c_Lclient_GameClient$.prototype = new $h_O();
@@ -1318,18 +1222,28 @@ $c_Lclient_GameClient$.prototype.init__I__I__sjs_js_Array = (function(width, hei
   this.Lclient_GameClient$__f_running = false;
   this.Lclient_GameClient$__f_frameCount = 0;
   this.Lclient_GameClient$__f_lastFpsUpdate = $uD(window.performance.now());
+  this.Lclient_GameClient$__f_gridWidth = width;
+  this.Lclient_GameClient$__f_gridHeight = height;
   $p_Lclient_GameClient$__initRenderCache__V(this);
   var this$1 = $n($as_Lmodels_com_bulba_GameState($n(this.Lclient_GameClient$__f_gameState).get__O()));
   return $p_Lclient_GameClient$__toJsArray__sci_Seq__sjs_js_Array(this, $f_Lmodels_com_bulba_canvas_Canvas__toHex__sci_Seq($n(this$1.Lmodels_com_bulba_GameState__f_canvas)));
 });
 $c_Lclient_GameClient$.prototype.initOptimized__I__I__V = (function(width, height) {
-  var canvas = new $c_Lmodels_com_bulba_canvas_RandomCanvas(width, height);
-  this.Lclient_GameClient$__f_gameState = new $c_s_Some(new $c_Lmodels_com_bulba_GameState(canvas));
   this.Lclient_GameClient$__f_running = false;
   this.Lclient_GameClient$__f_frameCount = 0;
   this.Lclient_GameClient$__f_lastFpsUpdate = $uD(window.performance.now());
+  this.Lclient_GameClient$__f_gridWidth = height;
+  this.Lclient_GameClient$__f_gridHeight = width;
+  var size = Math.imul(this.Lclient_GameClient$__f_gridWidth, this.Lclient_GameClient$__f_gridHeight);
+  this.Lclient_GameClient$__f_grid = new Uint8Array(size);
+  this.Lclient_GameClient$__f_nextGrid = new Uint8Array(size);
+  var i = 0;
+  while ((i < size)) {
+    this.Lclient_GameClient$__f_grid[i] = (($uD(Math.random()) > 0.9) ? 1 : 0);
+    i = ((1 + i) | 0);
+  }
   $p_Lclient_GameClient$__initRenderCache__V(this);
-  $p_Lclient_GameClient$__renderFull__V(this);
+  $p_Lclient_GameClient$__renderFromTypedArray__V(this);
 });
 $c_Lclient_GameClient$.prototype.step__sjs_js_Array = (function() {
   var x1 = this.Lclient_GameClient$__f_gameState;
@@ -1397,12 +1311,9 @@ $c_Lclient_GameClient$.prototype.startOptimized__V = (function() {
   })));
 });
 $c_Lclient_GameClient$.prototype.stepOptimized__V = (function() {
-  var this$1 = $n(this.Lclient_GameClient$__f_gameState);
-  if ((!this$1.isEmpty__Z())) {
-    var arg1 = this$1.get__O();
-    var gs = $as_Lmodels_com_bulba_GameState(arg1);
-    $n(gs).advance__V();
-    $p_Lclient_GameClient$__renderDirect__V($m_Lclient_GameClient$());
+  if ((this.Lclient_GameClient$__f_grid !== null)) {
+    $p_Lclient_GameClient$__advanceFast__V(this);
+    $p_Lclient_GameClient$__renderFromTypedArray__V(this);
   }
 });
 $c_Lclient_GameClient$.prototype.stopAnimation__V = (function() {
@@ -4059,17 +3970,6 @@ $c_scm_HashSet$Node.prototype.findNode__O__I__scm_HashSet$Node = (function(k, h)
     }
   }
 });
-$c_scm_HashSet$Node.prototype.foreach__F1__V = (function(f) {
-  var _$this = this;
-  while (true) {
-    $n(f).apply__O__O($n(_$this).scm_HashSet$Node__f__key);
-    if (($n(_$this).scm_HashSet$Node__f__next !== null)) {
-      _$this = $n(_$this).scm_HashSet$Node__f__next;
-      continue;
-    }
-    break;
-  }
-});
 $c_scm_HashSet$Node.prototype.toString__T = (function() {
   return ((((("Node(" + this.scm_HashSet$Node__f__key) + ", ") + this.scm_HashSet$Node__f__hash) + ") -> ") + this.scm_HashSet$Node__f__next);
 });
@@ -6283,65 +6183,6 @@ $c_sci_BitmapIndexedSetNode.prototype.updated__O__I__I__I__sci_BitmapIndexedSetN
   }
   return this.copyAndInsertValue__I__O__I__I__sci_BitmapIndexedSetNode(bitpos, element, originalHash, elementHash);
 });
-$c_sci_BitmapIndexedSetNode.prototype.updateWithShallowMutations__O__I__I__I__I__I = (function(element, originalHash, elementHash, shift, shallowlyMutableNodeMap) {
-  var mask = $m_sci_Node$().maskFrom__I__I__I(elementHash, shift);
-  var bitpos = $m_sci_Node$().bitposFrom__I__I(mask);
-  if (((this.sci_BitmapIndexedSetNode__f_dataMap & bitpos) !== 0)) {
-    var index = $m_sci_Node$().indexFrom__I__I__I__I(this.sci_BitmapIndexedSetNode__f_dataMap, mask, bitpos);
-    var element0 = this.getPayload__I__O(index);
-    var element0UnimprovedHash = this.getHash__I__I(index);
-    if (((element0UnimprovedHash === originalHash) && $m_sr_BoxesRunTime$().equals__O__O__Z(element0, element))) {
-      return shallowlyMutableNodeMap;
-    } else {
-      var element0Hash = $m_sc_Hashing$().improve__I__I(element0UnimprovedHash);
-      var subNodeNew = this.mergeTwoKeyValPairs__O__I__I__O__I__I__I__sci_SetNode(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, ((5 + shift) | 0));
-      this.migrateFromInlineToNodeInPlace__I__I__sci_SetNode__sci_BitmapIndexedSetNode(bitpos, element0Hash, subNodeNew);
-      return (shallowlyMutableNodeMap | bitpos);
-    }
-  } else if (((this.sci_BitmapIndexedSetNode__f_nodeMap & bitpos) !== 0)) {
-    var index$2 = $m_sci_Node$().indexFrom__I__I__I__I(this.sci_BitmapIndexedSetNode__f_nodeMap, mask, bitpos);
-    var subNode = this.getNode__I__sci_SetNode(index$2);
-    var subNodeSize = $n(subNode).size__I();
-    var subNodeCachedJavaKeySetHashCode = $n(subNode).cachedJavaKeySetHashCode__I();
-    var returnNodeMap = shallowlyMutableNodeMap;
-    matchEnd4: {
-      var subNodeNew$3;
-      if ((subNode instanceof $c_sci_BitmapIndexedSetNode)) {
-        var x2 = $as_sci_BitmapIndexedSetNode(subNode);
-        if (((bitpos & shallowlyMutableNodeMap) !== 0)) {
-          $n(x2).updateWithShallowMutations__O__I__I__I__I__I(element, originalHash, elementHash, ((5 + shift) | 0), 0);
-          var subNodeNew$3 = x2;
-          break matchEnd4;
-        }
-      }
-      var subNodeNew$2 = $n(subNode).updated__O__I__I__I__sci_SetNode(element, originalHash, elementHash, ((5 + shift) | 0));
-      if ((subNodeNew$2 !== subNode)) {
-        returnNodeMap = (returnNodeMap | bitpos);
-      }
-      var subNodeNew$3 = subNodeNew$2;
-    }
-    $n(this.sci_BitmapIndexedSetNode__f_content).set((((((-1) + $n(this.sci_BitmapIndexedSetNode__f_content).u.length) | 0) - this.nodeIndex__I__I(bitpos)) | 0), subNodeNew$3);
-    this.sci_BitmapIndexedSetNode__f_size = ((((this.sci_BitmapIndexedSetNode__f_size - subNodeSize) | 0) + $n(subNodeNew$3).size__I()) | 0);
-    this.sci_BitmapIndexedSetNode__f_cachedJavaKeySetHashCode = ((((this.sci_BitmapIndexedSetNode__f_cachedJavaKeySetHashCode - subNodeCachedJavaKeySetHashCode) | 0) + $n(subNodeNew$3).cachedJavaKeySetHashCode__I()) | 0);
-    return returnNodeMap;
-  } else {
-    var dataIx = this.dataIndex__I__I(bitpos);
-    var src = this.sci_BitmapIndexedSetNode__f_content;
-    var dst = new $ac_O(((1 + $n(src).u.length) | 0));
-    $systemArraycopyRefs($n(src), 0, dst, 0, dataIx);
-    dst.set(dataIx, element);
-    var destPos = ((1 + dataIx) | 0);
-    var length = (($n(src).u.length - dataIx) | 0);
-    $systemArraycopyRefs($n(src), dataIx, dst, destPos, length);
-    var dstHashes = this.insertElement__AI__I__I__AI(this.sci_BitmapIndexedSetNode__f_originalHashes, dataIx, originalHash);
-    this.sci_BitmapIndexedSetNode__f_dataMap = (this.sci_BitmapIndexedSetNode__f_dataMap | bitpos);
-    this.sci_BitmapIndexedSetNode__f_content = dst;
-    this.sci_BitmapIndexedSetNode__f_originalHashes = dstHashes;
-    this.sci_BitmapIndexedSetNode__f_size = ((1 + this.sci_BitmapIndexedSetNode__f_size) | 0);
-    this.sci_BitmapIndexedSetNode__f_cachedJavaKeySetHashCode = ((this.sci_BitmapIndexedSetNode__f_cachedJavaKeySetHashCode + elementHash) | 0);
-    return shallowlyMutableNodeMap;
-  }
-});
 $c_sci_BitmapIndexedSetNode.prototype.mergeTwoKeyValPairs__O__I__I__O__I__I__I__sci_SetNode = (function(key0, originalKeyHash0, keyHash0, key1, originalKeyHash1, keyHash1, shift) {
   if ((shift >= 32)) {
     var this$4 = $m_sci_Vector$();
@@ -6572,202 +6413,6 @@ $c_sci_BitmapIndexedSetNode.prototype.copy__sci_BitmapIndexedSetNode = (function
   var this$2 = $n(this.sci_BitmapIndexedSetNode__f_originalHashes);
   return new $c_sci_BitmapIndexedSetNode($x_2, $x_1, contentClone, this$2.clone__O(), this.sci_BitmapIndexedSetNode__f_size, this.sci_BitmapIndexedSetNode__f_cachedJavaKeySetHashCode);
 });
-$c_sci_BitmapIndexedSetNode.prototype.concat__sci_SetNode__I__sci_BitmapIndexedSetNode = (function(that, shift) {
-  if ((that instanceof $c_sci_BitmapIndexedSetNode)) {
-    var x2 = $as_sci_BitmapIndexedSetNode(that);
-    if ((this.sci_BitmapIndexedSetNode__f_size === 0)) {
-      return x2;
-    } else if ((($n(x2).sci_BitmapIndexedSetNode__f_size === 0) || (x2 === this))) {
-      return this;
-    } else if (($n(x2).sci_BitmapIndexedSetNode__f_size === 1)) {
-      var originalHash = $n(x2).getHash__I__I(0);
-      return this.updated__O__I__I__I__sci_BitmapIndexedSetNode($n(x2).getPayload__I__O(0), originalHash, $m_sc_Hashing$().improve__I__I(originalHash), shift);
-    }
-    var anyChangesMadeSoFar = false;
-    var allMap = (((this.sci_BitmapIndexedSetNode__f_dataMap | $n(x2).sci_BitmapIndexedSetNode__f_dataMap) | this.sci_BitmapIndexedSetNode__f_nodeMap) | $n(x2).sci_BitmapIndexedSetNode__f_nodeMap);
-    var $x_2 = $m_sci_Node$();
-    if ((allMap === 0)) {
-      var $x_1 = 32;
-    } else {
-      var i = (allMap & ((-allMap) | 0));
-      var $x_1 = ((31 - $uI(Math.clz32(i))) | 0);
-    }
-    var minimumBitPos = $x_2.bitposFrom__I__I($x_1);
-    var maximumBitPos = $m_sci_Node$().bitposFrom__I__I(((31 - $uI(Math.clz32(allMap))) | 0));
-    var leftNodeRightNode = 0;
-    var leftDataRightNode = 0;
-    var leftNodeRightData = 0;
-    var leftDataOnly = 0;
-    var rightDataOnly = 0;
-    var leftNodeOnly = 0;
-    var rightNodeOnly = 0;
-    var leftDataRightDataMigrateToNode = 0;
-    var leftDataRightDataLeftOverwrites = 0;
-    var dataToNodeMigrationTargets = 0;
-    var bitpos = minimumBitPos;
-    var leftIdx = 0;
-    var rightIdx = 0;
-    var finished = false;
-    while ((!finished)) {
-      if (((bitpos & this.sci_BitmapIndexedSetNode__f_dataMap) !== 0)) {
-        if (((bitpos & $n(x2).sci_BitmapIndexedSetNode__f_dataMap) !== 0)) {
-          if (((this.getHash__I__I(leftIdx) === $n(x2).getHash__I__I(rightIdx)) && $m_sr_BoxesRunTime$().equals__O__O__Z(this.getPayload__I__O(leftIdx), $n(x2).getPayload__I__O(rightIdx)))) {
-            leftDataRightDataLeftOverwrites = (leftDataRightDataLeftOverwrites | bitpos);
-          } else {
-            leftDataRightDataMigrateToNode = (leftDataRightDataMigrateToNode | bitpos);
-            dataToNodeMigrationTargets = (dataToNodeMigrationTargets | $m_sci_Node$().bitposFrom__I__I($m_sci_Node$().maskFrom__I__I__I($m_sc_Hashing$().improve__I__I(this.getHash__I__I(leftIdx)), shift)));
-          }
-          rightIdx = ((1 + rightIdx) | 0);
-        } else if (((bitpos & $n(x2).sci_BitmapIndexedSetNode__f_nodeMap) !== 0)) {
-          leftDataRightNode = (leftDataRightNode | bitpos);
-        } else {
-          leftDataOnly = (leftDataOnly | bitpos);
-        }
-        leftIdx = ((1 + leftIdx) | 0);
-      } else if (((bitpos & this.sci_BitmapIndexedSetNode__f_nodeMap) !== 0)) {
-        if (((bitpos & $n(x2).sci_BitmapIndexedSetNode__f_dataMap) !== 0)) {
-          leftNodeRightData = (leftNodeRightData | bitpos);
-          rightIdx = ((1 + rightIdx) | 0);
-        } else if (((bitpos & $n(x2).sci_BitmapIndexedSetNode__f_nodeMap) !== 0)) {
-          leftNodeRightNode = (leftNodeRightNode | bitpos);
-        } else {
-          leftNodeOnly = (leftNodeOnly | bitpos);
-        }
-      } else if (((bitpos & $n(x2).sci_BitmapIndexedSetNode__f_dataMap) !== 0)) {
-        rightDataOnly = (rightDataOnly | bitpos);
-        rightIdx = ((1 + rightIdx) | 0);
-      } else if (((bitpos & $n(x2).sci_BitmapIndexedSetNode__f_nodeMap) !== 0)) {
-        rightNodeOnly = (rightNodeOnly | bitpos);
-      }
-      if ((bitpos === maximumBitPos)) {
-        finished = true;
-      } else {
-        bitpos = (bitpos << 1);
-      }
-    }
-    var newDataMap = ((leftDataOnly | rightDataOnly) | leftDataRightDataLeftOverwrites);
-    var newNodeMap = (((((leftNodeRightNode | leftDataRightNode) | leftNodeRightData) | leftNodeOnly) | rightNodeOnly) | dataToNodeMigrationTargets);
-    if (((newDataMap === (leftDataOnly | leftDataRightDataLeftOverwrites)) && (newNodeMap === leftNodeOnly))) {
-      return this;
-    }
-    var newDataSize = $m_jl_Integer$().bitCount__I__I(newDataMap);
-    var newContentSize = ((newDataSize + $m_jl_Integer$().bitCount__I__I(newNodeMap)) | 0);
-    var newContent = new $ac_O(newContentSize);
-    var newOriginalHashes = new $ac_I(newDataSize);
-    var newSize = 0;
-    var newCachedHashCode = 0;
-    var leftDataIdx = 0;
-    var rightDataIdx = 0;
-    var leftNodeIdx = 0;
-    var rightNodeIdx = 0;
-    var nextShift = ((5 + shift) | 0);
-    var compressedDataIdx = 0;
-    var compressedNodeIdx = 0;
-    var bitpos$2 = minimumBitPos;
-    var finished$2 = false;
-    while ((!finished$2)) {
-      if (((bitpos$2 & leftNodeRightNode) !== 0)) {
-        var leftNode = this.getNode__I__sci_SetNode(leftNodeIdx);
-        var newNode = $n(leftNode).concat__sci_SetNode__I__sci_SetNode($n(x2).getNode__I__sci_SetNode(rightNodeIdx), nextShift);
-        if ((leftNode !== newNode)) {
-          anyChangesMadeSoFar = true;
-        }
-        newContent.set((((-1) + ((newContentSize - compressedNodeIdx) | 0)) | 0), newNode);
-        compressedNodeIdx = ((1 + compressedNodeIdx) | 0);
-        rightNodeIdx = ((1 + rightNodeIdx) | 0);
-        leftNodeIdx = ((1 + leftNodeIdx) | 0);
-        newSize = ((newSize + $n(newNode).size__I()) | 0);
-        newCachedHashCode = ((newCachedHashCode + $n(newNode).cachedJavaKeySetHashCode__I()) | 0);
-      } else if (((bitpos$2 & leftDataRightNode) !== 0)) {
-        anyChangesMadeSoFar = true;
-        var n = $n(x2).getNode__I__sci_SetNode(rightNodeIdx);
-        var leftPayload = this.getPayload__I__O(leftDataIdx);
-        var leftOriginalHash = this.getHash__I__I(leftDataIdx);
-        var leftImproved = $m_sc_Hashing$().improve__I__I(leftOriginalHash);
-        var newNode$2 = $n(n).updated__O__I__I__I__sci_SetNode(leftPayload, leftOriginalHash, leftImproved, nextShift);
-        newContent.set((((-1) + ((newContentSize - compressedNodeIdx) | 0)) | 0), newNode$2);
-        compressedNodeIdx = ((1 + compressedNodeIdx) | 0);
-        rightNodeIdx = ((1 + rightNodeIdx) | 0);
-        leftDataIdx = ((1 + leftDataIdx) | 0);
-        newSize = ((newSize + $n(newNode$2).size__I()) | 0);
-        newCachedHashCode = ((newCachedHashCode + $n(newNode$2).cachedJavaKeySetHashCode__I()) | 0);
-      } else if (((bitpos$2 & leftNodeRightData) !== 0)) {
-        var rightOriginalHash = $n(x2).getHash__I__I(rightDataIdx);
-        var leftNode$2 = this.getNode__I__sci_SetNode(leftNodeIdx);
-        var updated = $n(leftNode$2).updated__O__I__I__I__sci_SetNode($n(x2).getPayload__I__O(rightDataIdx), $n(x2).getHash__I__I(rightDataIdx), $m_sc_Hashing$().improve__I__I(rightOriginalHash), nextShift);
-        if ((updated !== leftNode$2)) {
-          anyChangesMadeSoFar = true;
-        }
-        newContent.set((((-1) + ((newContentSize - compressedNodeIdx) | 0)) | 0), updated);
-        compressedNodeIdx = ((1 + compressedNodeIdx) | 0);
-        leftNodeIdx = ((1 + leftNodeIdx) | 0);
-        rightDataIdx = ((1 + rightDataIdx) | 0);
-        newSize = ((newSize + $n(updated).size__I()) | 0);
-        newCachedHashCode = ((newCachedHashCode + $n(updated).cachedJavaKeySetHashCode__I()) | 0);
-      } else if (((bitpos$2 & leftDataOnly) !== 0)) {
-        var originalHash$2 = $n(this.sci_BitmapIndexedSetNode__f_originalHashes).get(leftDataIdx);
-        newContent.set(compressedDataIdx, this.getPayload__I__O(leftDataIdx));
-        newOriginalHashes.set(compressedDataIdx, originalHash$2);
-        compressedDataIdx = ((1 + compressedDataIdx) | 0);
-        leftDataIdx = ((1 + leftDataIdx) | 0);
-        newSize = ((1 + newSize) | 0);
-        newCachedHashCode = ((newCachedHashCode + $m_sc_Hashing$().improve__I__I(originalHash$2)) | 0);
-      } else if (((bitpos$2 & rightDataOnly) !== 0)) {
-        anyChangesMadeSoFar = true;
-        var originalHash$3 = $n($n(x2).sci_BitmapIndexedSetNode__f_originalHashes).get(rightDataIdx);
-        newContent.set(compressedDataIdx, $n(x2).getPayload__I__O(rightDataIdx));
-        newOriginalHashes.set(compressedDataIdx, originalHash$3);
-        compressedDataIdx = ((1 + compressedDataIdx) | 0);
-        rightDataIdx = ((1 + rightDataIdx) | 0);
-        newSize = ((1 + newSize) | 0);
-        newCachedHashCode = ((newCachedHashCode + $m_sc_Hashing$().improve__I__I(originalHash$3)) | 0);
-      } else if (((bitpos$2 & leftNodeOnly) !== 0)) {
-        var newNode$4 = this.getNode__I__sci_SetNode(leftNodeIdx);
-        newContent.set((((-1) + ((newContentSize - compressedNodeIdx) | 0)) | 0), newNode$4);
-        compressedNodeIdx = ((1 + compressedNodeIdx) | 0);
-        leftNodeIdx = ((1 + leftNodeIdx) | 0);
-        newSize = ((newSize + $n(newNode$4).size__I()) | 0);
-        newCachedHashCode = ((newCachedHashCode + $n(newNode$4).cachedJavaKeySetHashCode__I()) | 0);
-      } else if (((bitpos$2 & rightNodeOnly) !== 0)) {
-        anyChangesMadeSoFar = true;
-        var newNode$5 = $n(x2).getNode__I__sci_SetNode(rightNodeIdx);
-        newContent.set((((-1) + ((newContentSize - compressedNodeIdx) | 0)) | 0), newNode$5);
-        compressedNodeIdx = ((1 + compressedNodeIdx) | 0);
-        rightNodeIdx = ((1 + rightNodeIdx) | 0);
-        newSize = ((newSize + $n(newNode$5).size__I()) | 0);
-        newCachedHashCode = ((newCachedHashCode + $n(newNode$5).cachedJavaKeySetHashCode__I()) | 0);
-      } else if (((bitpos$2 & leftDataRightDataMigrateToNode) !== 0)) {
-        anyChangesMadeSoFar = true;
-        var leftOriginalHash$2 = this.getHash__I__I(leftDataIdx);
-        var rightOriginalHash$2 = $n(x2).getHash__I__I(rightDataIdx);
-        var newNode$6 = $n(x2).mergeTwoKeyValPairs__O__I__I__O__I__I__I__sci_SetNode(this.getPayload__I__O(leftDataIdx), leftOriginalHash$2, $m_sc_Hashing$().improve__I__I(leftOriginalHash$2), $n(x2).getPayload__I__O(rightDataIdx), rightOriginalHash$2, $m_sc_Hashing$().improve__I__I(rightOriginalHash$2), nextShift);
-        newContent.set((((-1) + ((newContentSize - compressedNodeIdx) | 0)) | 0), newNode$6);
-        compressedNodeIdx = ((1 + compressedNodeIdx) | 0);
-        leftDataIdx = ((1 + leftDataIdx) | 0);
-        rightDataIdx = ((1 + rightDataIdx) | 0);
-        newSize = ((newSize + $n(newNode$6).size__I()) | 0);
-        newCachedHashCode = ((newCachedHashCode + $n(newNode$6).cachedJavaKeySetHashCode__I()) | 0);
-      } else if (((bitpos$2 & leftDataRightDataLeftOverwrites) !== 0)) {
-        var originalHash$4 = $n($n(x2).sci_BitmapIndexedSetNode__f_originalHashes).get(rightDataIdx);
-        newContent.set(compressedDataIdx, $n(x2).getPayload__I__O(rightDataIdx));
-        newOriginalHashes.set(compressedDataIdx, originalHash$4);
-        compressedDataIdx = ((1 + compressedDataIdx) | 0);
-        rightDataIdx = ((1 + rightDataIdx) | 0);
-        newSize = ((1 + newSize) | 0);
-        newCachedHashCode = ((newCachedHashCode + $m_sc_Hashing$().improve__I__I(originalHash$4)) | 0);
-        leftDataIdx = ((1 + leftDataIdx) | 0);
-      }
-      if ((bitpos$2 === maximumBitPos)) {
-        finished$2 = true;
-      } else {
-        bitpos$2 = (bitpos$2 << 1);
-      }
-    }
-    return (anyChangesMadeSoFar ? new $c_sci_BitmapIndexedSetNode(newDataMap, newNodeMap, newContent, newOriginalHashes, newSize, newCachedHashCode) : this);
-  } else {
-    throw new $c_jl_UnsupportedOperationException("Cannot concatenate a HashCollisionSetNode with a BitmapIndexedSetNode");
-  }
-});
 $c_sci_BitmapIndexedSetNode.prototype.foreachWithHash__F2__V = (function(f) {
   var i = this.sci_BitmapIndexedSetNode__f_dataMap;
   var iN = $m_jl_Integer$().bitCount__I__I(i);
@@ -6783,9 +6428,6 @@ $c_sci_BitmapIndexedSetNode.prototype.foreachWithHash__F2__V = (function(f) {
     $n(this.getNode__I__sci_SetNode(j)).foreachWithHash__F2__V(f);
     j = ((1 + j) | 0);
   }
-});
-$c_sci_BitmapIndexedSetNode.prototype.concat__sci_SetNode__I__sci_SetNode = (function(that, shift) {
-  return this.concat__sci_SetNode__I__sci_BitmapIndexedSetNode(that, shift);
 });
 $c_sci_BitmapIndexedSetNode.prototype.copy__sci_SetNode = (function() {
   return this.copy__sci_BitmapIndexedSetNode();
@@ -6927,33 +6569,6 @@ $c_sci_HashCollisionSetNode.prototype.equals__O__Z = (function(that) {
 });
 $c_sci_HashCollisionSetNode.prototype.hashCode__I = (function() {
   throw new $c_jl_UnsupportedOperationException("Trie nodes do not support hashing.");
-});
-$c_sci_HashCollisionSetNode.prototype.concat__sci_SetNode__I__sci_SetNode = (function(that, shift) {
-  if ((that instanceof $c_sci_HashCollisionSetNode)) {
-    var x2 = $as_sci_HashCollisionSetNode(that);
-    if ((x2 === this)) {
-      return this;
-    } else {
-      var newContent = null;
-      var iter = $n($n(x2).sci_HashCollisionSetNode__f_content).iterator__sc_Iterator();
-      while ($n(iter).hasNext__Z()) {
-        var nextPayload = $n(iter).next__O();
-        var this$1 = $n(this.sci_HashCollisionSetNode__f_content);
-        if ((!$f_sc_SeqOps__contains__O__Z(this$1, nextPayload))) {
-          if ((newContent === null)) {
-            newContent = new $c_sci_VectorBuilder();
-            $n(newContent).addAll__sc_IterableOnce__sci_VectorBuilder(this.sci_HashCollisionSetNode__f_content);
-          }
-          $n(newContent).addOne__O__sci_VectorBuilder(nextPayload);
-        }
-      }
-      return ((newContent === null) ? this : new $c_sci_HashCollisionSetNode(this.sci_HashCollisionSetNode__f_originalHash, this.sci_HashCollisionSetNode__f_hash, $n(newContent).result__sci_Vector()));
-    }
-  } else if ((that instanceof $c_sci_BitmapIndexedSetNode)) {
-    throw new $c_jl_UnsupportedOperationException("Cannot concatenate a HashCollisionSetNode with a BitmapIndexedSetNode");
-  } else {
-    throw new $c_s_MatchError(that);
-  }
 });
 $c_sci_HashCollisionSetNode.prototype.foreachWithHash__F2__V = (function(f) {
   var iter = $n(this.sci_HashCollisionSetNode__f_content).iterator__sc_Iterator();
@@ -8810,9 +8425,6 @@ $c_Lmodels_com_bulba_DeadCell$.prototype.stage__sci_Seq__Lmodels_com_bulba_stagi
 $c_Lmodels_com_bulba_DeadCell$.prototype.toString__T = (function() {
   return "0";
 });
-$c_Lmodels_com_bulba_DeadCell$.prototype.isAlive__Z = (function() {
-  return false;
-});
 $c_Lmodels_com_bulba_DeadCell$.prototype.productPrefix__T = (function() {
   return "DeadCell";
 });
@@ -8856,9 +8468,6 @@ $c_Lmodels_com_bulba_LiveCell$.prototype.stage__sci_Seq__Lmodels_com_bulba_stagi
 });
 $c_Lmodels_com_bulba_LiveCell$.prototype.toString__T = (function() {
   return "1";
-});
-$c_Lmodels_com_bulba_LiveCell$.prototype.isAlive__Z = (function() {
-  return true;
 });
 $c_Lmodels_com_bulba_LiveCell$.prototype.productPrefix__T = (function() {
   return "LiveCell";
@@ -9442,38 +9051,6 @@ function $p_sc_LinearSeqOps__linearSeqEq$1__sc_LinearSeq__sc_LinearSeq__Z($thiz,
       }
     }
   }
-}
-function $f_sc_SetOps__concat__sc_IterableOnce__sc_SetOps($thiz, that) {
-  if ((($thiz instanceof $c_sci_Set$Set1) || (($thiz instanceof $c_sci_Set$Set2) || (($thiz instanceof $c_sci_Set$Set3) || ($thiz instanceof $c_sci_Set$Set4))))) {
-    var result = $as_sci_SetOps($thiz);
-    var it = $n(that).iterator__sc_Iterator();
-    while ($n(it).hasNext__Z()) {
-      var this$1 = $n(result);
-      var elem = $n(it).next__O();
-      result = this$1.incl__O__sci_SetOps(elem);
-    }
-    return result;
-  } else {
-    if ($is_sc_Iterable(that)) {
-      var x2 = $as_sc_Iterable(that);
-      var coll = new $c_sc_View$Concat($thiz, x2);
-    } else {
-      var coll = $n($thiz.iterator__sc_Iterator()).concat__F0__sc_Iterator(new $c_sjsr_AnonFunction0((() => $n(that).iterator__sc_Iterator())));
-    }
-    return $as_sc_SetOps($thiz.fromSpecific__sc_IterableOnce__sc_IterableOps(coll));
-  }
-}
-function $is_sc_SetOps(obj) {
-  return (!(!((obj && obj.$classData) && obj.$classData.ancestors.sc_SetOps)));
-}
-function $as_sc_SetOps(obj) {
-  return (($is_sc_SetOps(obj) || (obj === null)) ? obj : $throwClassCastException(obj, "scala.collection.SetOps"));
-}
-function $isArrayOf_sc_SetOps(obj, depth) {
-  return (!(!(((obj && obj.$classData) && (obj.$classData.arrayDepth === depth)) && obj.$classData.arrayBase.ancestors.sc_SetOps)));
-}
-function $asArrayOf_sc_SetOps(obj, depth) {
-  return (($isArrayOf_sc_SetOps(obj, depth) || (obj === null)) ? obj : $throwArrayCastException(obj, "Lscala.collection.SetOps;", depth));
 }
 /** @constructor */
 function $c_sc_StrictOptimizedLinearSeqOps$$anon$1(outer) {
@@ -12010,9 +11587,6 @@ $c_Lmodels_com_bulba_canvas_RandomCanvas.prototype.stage__Lmodels_com_bulba_canv
 $c_Lmodels_com_bulba_canvas_RandomCanvas.prototype.canvas__sci_Vector = (function() {
   return this.Lmodels_com_bulba_canvas_RandomCanvas__f_canvas;
 });
-$c_Lmodels_com_bulba_canvas_RandomCanvas.prototype.changedCells__sci_Set = (function() {
-  return this.Lmodels_com_bulba_canvas_RandomCanvas__f_changedCells;
-});
 $c_Lmodels_com_bulba_canvas_RandomCanvas.prototype.productPrefix__T = (function() {
   return "RandomCanvas";
 });
@@ -12121,9 +11695,6 @@ $c_Lmodels_com_bulba_canvas_Vector2dCanvas.prototype.canvasWidth__I = (function(
 });
 $c_Lmodels_com_bulba_canvas_Vector2dCanvas.prototype.canvas__sci_Vector = (function() {
   return this.Lmodels_com_bulba_canvas_Vector2dCanvas__f_canvas;
-});
-$c_Lmodels_com_bulba_canvas_Vector2dCanvas.prototype.changedCells__sci_Set = (function() {
-  return this.Lmodels_com_bulba_canvas_Vector2dCanvas__f_changedCells;
 });
 $c_Lmodels_com_bulba_canvas_Vector2dCanvas.prototype.stagedCells__sci_Vector = (function() {
   if ($n(this.Lmodels_com_bulba_canvas_Vector2dCanvas__f_changedCells).isEmpty__Z()) {
@@ -13200,18 +12771,6 @@ var $d_sci_SetIterator = new $TypeData().initClass($c_sci_SetIterator, "scala.co
   sc_IterableOnce: 1,
   sc_IterableOnceOps: 1
 }));
-function $is_sci_SetOps(obj) {
-  return (!(!((obj && obj.$classData) && obj.$classData.ancestors.sci_SetOps)));
-}
-function $as_sci_SetOps(obj) {
-  return (($is_sci_SetOps(obj) || (obj === null)) ? obj : $throwClassCastException(obj, "scala.collection.immutable.SetOps"));
-}
-function $isArrayOf_sci_SetOps(obj, depth) {
-  return (!(!(((obj && obj.$classData) && (obj.$classData.arrayDepth === depth)) && obj.$classData.arrayBase.ancestors.sci_SetOps)));
-}
-function $asArrayOf_sci_SetOps(obj, depth) {
-  return (($isArrayOf_sci_SetOps(obj, depth) || (obj === null)) ? obj : $throwArrayCastException(obj, "Lscala.collection.immutable.SetOps;", depth));
-}
 function $ct_scm_ArrayBuilder__($thiz) {
   $thiz.scm_ArrayBuilder__f_capacity = 0;
   $thiz.scm_ArrayBuilder__f_size = 0;
@@ -13702,12 +13261,6 @@ $c_T2$mcII$sp.prototype.constructor = $c_T2$mcII$sp;
 function $h_T2$mcII$sp() {
 }
 $h_T2$mcII$sp.prototype = $c_T2$mcII$sp.prototype;
-$c_T2$mcII$sp.prototype._1$mcI$sp__I = (function() {
-  return this.T2$mcII$sp__f__1$mcI$sp;
-});
-$c_T2$mcII$sp.prototype._2$mcI$sp__I = (function() {
-  return this.T2$mcII$sp__f__2$mcI$sp;
-});
 $c_T2$mcII$sp.prototype._2__O = (function() {
   return this.T2$mcII$sp__f__2$mcI$sp;
 });
@@ -15071,9 +14624,6 @@ $c_sc_AbstractSet.prototype.toString__T = (function() {
 $c_sc_AbstractSet.prototype.subsetOf__sc_Set__Z = (function(that) {
   return this.forall__F1__Z(that);
 });
-$c_sc_AbstractSet.prototype.concat__sc_IterableOnce__sc_SetOps = (function(that) {
-  return $f_sc_SetOps__concat__sc_IterableOnce__sc_SetOps(this, that);
-});
 $c_sc_AbstractSet.prototype.apply__O__O = (function(v1) {
   return this.contains__O__Z(v1);
 });
@@ -16152,84 +15702,6 @@ $c_sci_HashSet.prototype.incl__O__sci_HashSet = (function(element) {
   var newRootNode = $n(this.sci_HashSet__f_rootNode).updated__O__I__I__I__sci_BitmapIndexedSetNode(element, elementUnimprovedHash, elementHash, 0);
   return $p_sci_HashSet__newHashSetOrThis__sci_BitmapIndexedSetNode__sci_HashSet(this, newRootNode);
 });
-$c_sci_HashSet.prototype.concat__sc_IterableOnce__sci_HashSet = (function(that) {
-  if ((that instanceof $c_sci_HashSet)) {
-    var x2 = $as_sci_HashSet(that);
-    if (this.isEmpty__Z()) {
-      return x2;
-    } else {
-      var newNode = $n(this.sci_HashSet__f_rootNode).concat__sci_SetNode__I__sci_BitmapIndexedSetNode($n(x2).sci_HashSet__f_rootNode, 0);
-      return ((newNode === $n(x2).sci_HashSet__f_rootNode) ? x2 : $p_sci_HashSet__newHashSetOrThis__sci_BitmapIndexedSetNode__sci_HashSet(this, newNode));
-    }
-  } else if ((that instanceof $c_scm_HashSet)) {
-    var x3 = $as_scm_HashSet(that);
-    var this$1 = $n(x3);
-    var iter = new $c_scm_HashSet$$anon$2(this$1);
-    var current = this.sci_HashSet__f_rootNode;
-    while (iter.hasNext__Z()) {
-      var next = $as_scm_HashSet$Node(iter.next__O());
-      var this$2 = $n(x3);
-      var improvedHash = $n(next).scm_HashSet$Node__f__hash;
-      var originalHash = this$2.scala$collection$mutable$HashSet$$improveHash__I__I(improvedHash);
-      var improved = $m_sc_Hashing$().improve__I__I(originalHash);
-      current = $n(current).updated__O__I__I__I__sci_BitmapIndexedSetNode($n(next).scm_HashSet$Node__f__key, originalHash, improved, 0);
-      if ((current !== this.sci_HashSet__f_rootNode)) {
-        var shallowlyMutableNodeMap = $m_sci_Node$().bitposFrom__I__I($m_sci_Node$().maskFrom__I__I__I(improved, 0));
-        while (iter.hasNext__Z()) {
-          var next$2 = $as_scm_HashSet$Node(iter.next__O());
-          var this$3 = $n(x3);
-          var improvedHash$1 = $n(next$2).scm_HashSet$Node__f__hash;
-          var originalHash$2 = this$3.scala$collection$mutable$HashSet$$improveHash__I__I(improvedHash$1);
-          var improved$2 = $m_sc_Hashing$().improve__I__I(originalHash$2);
-          shallowlyMutableNodeMap = $n(current).updateWithShallowMutations__O__I__I__I__I__I($n(next$2).scm_HashSet$Node__f__key, originalHash$2, improved$2, 0, shallowlyMutableNodeMap);
-        }
-        return new $c_sci_HashSet(current);
-      }
-    }
-    return this;
-  } else if (false) {
-    var x4 = $as_scm_LinkedHashSet(that);
-    var iter$2 = $n(x4).entryIterator__sc_Iterator();
-    var current$2 = this.sci_HashSet__f_rootNode;
-    while ($n(iter$2).hasNext__Z()) {
-      var next$3 = $as_scm_LinkedHashSet$Entry($n(iter$2).next__O());
-      var originalHash$3 = $n(x4).unimproveHash__I__I($n(next$3).hash__I());
-      var improved$3 = $m_sc_Hashing$().improve__I__I(originalHash$3);
-      current$2 = $n(current$2).updated__O__I__I__I__sci_BitmapIndexedSetNode($n(next$3).key__O(), originalHash$3, improved$3, 0);
-      if ((current$2 !== this.sci_HashSet__f_rootNode)) {
-        var shallowlyMutableNodeMap$2 = $m_sci_Node$().bitposFrom__I__I($m_sci_Node$().maskFrom__I__I__I(improved$3, 0));
-        while ($n(iter$2).hasNext__Z()) {
-          var next$4 = $as_scm_LinkedHashSet$Entry($n(iter$2).next__O());
-          var originalHash$4 = $n(x4).unimproveHash__I__I($n(next$4).hash__I());
-          var improved$4 = $m_sc_Hashing$().improve__I__I(originalHash$4);
-          shallowlyMutableNodeMap$2 = $n(current$2).updateWithShallowMutations__O__I__I__I__I__I($n(next$4).key__O(), originalHash$4, improved$4, 0, shallowlyMutableNodeMap$2);
-        }
-        return new $c_sci_HashSet(current$2);
-      }
-    }
-    return this;
-  } else {
-    var iter$3 = $n(that).iterator__sc_Iterator();
-    var current$3 = this.sci_HashSet__f_rootNode;
-    while ($n(iter$3).hasNext__Z()) {
-      var element = $n(iter$3).next__O();
-      var originalHash$5 = $m_sr_Statics$().anyHash__O__I(element);
-      var improved$5 = $m_sc_Hashing$().improve__I__I(originalHash$5);
-      current$3 = $n(current$3).updated__O__I__I__I__sci_BitmapIndexedSetNode(element, originalHash$5, improved$5, 0);
-      if ((current$3 !== this.sci_HashSet__f_rootNode)) {
-        var shallowlyMutableNodeMap$3 = $m_sci_Node$().bitposFrom__I__I($m_sci_Node$().maskFrom__I__I__I(improved$5, 0));
-        while ($n(iter$3).hasNext__Z()) {
-          var element$2 = $n(iter$3).next__O();
-          var originalHash$6 = $m_sr_Statics$().anyHash__O__I(element$2);
-          var improved$6 = $m_sc_Hashing$().improve__I__I(originalHash$6);
-          shallowlyMutableNodeMap$3 = $n(current$3).updateWithShallowMutations__O__I__I__I__I__I(element$2, originalHash$6, improved$6, 0, shallowlyMutableNodeMap$3);
-        }
-        return new $c_sci_HashSet(current$3);
-      }
-    }
-    return this;
-  }
-});
 $c_sci_HashSet.prototype.head__O = (function() {
   return $n(this.iterator__sc_Iterator()).next__O();
 });
@@ -16271,9 +15743,6 @@ $c_sci_HashSet.prototype.hashCode__I = (function() {
   var it = new $c_sci_SetHashIterator(this.sci_HashSet__f_rootNode);
   var hash = $m_s_util_hashing_MurmurHash3$().unorderedHash__sc_IterableOnce__I__I(it, $m_s_util_hashing_MurmurHash3$().s_util_hashing_MurmurHash3$__f_setSeed);
   return hash;
-});
-$c_sci_HashSet.prototype.concat__sc_IterableOnce__sc_SetOps = (function(that) {
-  return this.concat__sc_IterableOnce__sci_HashSet(that);
 });
 $c_sci_HashSet.prototype.incl__O__sci_SetOps = (function(elem) {
   return this.incl__O__sci_HashSet(elem);
@@ -17039,11 +16508,6 @@ $c_scm_HashSet.prototype.addAll__sc_IterableOnce__scm_HashSet = (function(xs) {
 $c_scm_HashSet.prototype.iterator__sc_Iterator = (function() {
   return new $c_scm_HashSet$$anon$1(this);
 });
-$c_scm_HashSet.prototype.clear__V = (function() {
-  var a = this.scm_HashSet__f_scala$collection$mutable$HashSet$$table;
-  $m_ju_Arrays$().fill__AO__O__V(a, null);
-  this.scm_HashSet__f_contentSize = 0;
-});
 $c_scm_HashSet.prototype.iterableFactory__sc_IterableFactory = (function() {
   return $m_scm_HashSet$();
 });
@@ -17052,17 +16516,6 @@ $c_scm_HashSet.prototype.knownSize__I = (function() {
 });
 $c_scm_HashSet.prototype.isEmpty__Z = (function() {
   return (this.scm_HashSet__f_contentSize === 0);
-});
-$c_scm_HashSet.prototype.foreach__F1__V = (function(f) {
-  var len = $n(this.scm_HashSet__f_scala$collection$mutable$HashSet$$table).u.length;
-  var i = 0;
-  while ((i < len)) {
-    var n = $n(this.scm_HashSet__f_scala$collection$mutable$HashSet$$table).get(i);
-    if ((n !== null)) {
-      $n(n).foreach__F1__V(f);
-    }
-    i = ((1 + i) | 0);
-  }
 });
 $c_scm_HashSet.prototype.className__T = (function() {
   return "HashSet";
