@@ -171,6 +171,7 @@ sbt compile
 sbt client/fullLinkJS
 ```
 
-## License
+## Other implementations
 
-MIT
+http://rosettacode.org/wiki/Conway's_Game_of_Life/Scala
+http://www.luigip.com/?p=133

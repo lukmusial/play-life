@@ -12,13 +12,6 @@ GET     /3d                         controllers.ThreedController.index()
 # Legacy URL redirects
 GET     /threed                     controllers.ThreedController.index()
 
-# API endpoints
-GET     /life                       controllers.LifeController.getState()
-GET     /threed/life                controllers.ThreedController.getState()
-POST    /reset/height/:height/width/:width     controllers.LifeController.reset(height: Int, width: Int)
-POST    /threed/reset/layers/:layers/height/:height/width/:width     controllers.ThreedController.reset(layers: Int, height: Int, width: Int)
-GET     /assets/javascripts/routes  controllers.LifeController.javascriptRoutes()
-
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.at(path="/public", file)
 

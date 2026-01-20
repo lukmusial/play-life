@@ -2,7 +2,7 @@ package models.com.bulba
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import models.com.bulba.canvas.{Vector2dCanvas, Canvas, Finite2dCanvas, VectorCanvas}
+import models.com.bulba.canvas.Vector2dCanvas
 
 class Vector2dCanvasSpec extends AnyFlatSpec with Matchers {
 
