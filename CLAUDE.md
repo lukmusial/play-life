@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Play-Life is a Scala implementation of Conway's Game of Life using Play Framework 3.0 with both 2D and 3D visualization capabilities. The 2D simulation runs entirely in the browser via Scala.js for 60+ FPS performance. The 3D simulation uses Three.js with WebGL particle rendering.
+Play-Life is a Scala implementation of Conway's Game of Life with both 2D and 3D visualizations. All game computation runs client-side via Scala.js for 60+ FPS performance. The Play Framework server only serves static HTML pages and assets.
 
 ## Build and Run Commands
 
@@ -33,7 +33,6 @@ sbt client/fullLinkJS
 - Landing page: http://localhost:9000/
 - 2D visualization: http://localhost:9000/2d
 - 3D visualization: http://localhost:9000/3d
-- Legacy 3D URL: http://localhost:9000/threed (redirects to /3d)
 
 ## Project Structure
 
@@ -49,20 +48,15 @@ play-life/
 ├── client/                 # Scala.js browser client
 │   └── src/main/scala/
 │       └── client/
-│           └── GameClient.scala     # Browser game engine
-├── server/                 # Play Framework server
+│           └── GameClient.scala     # Browser game engine (2D + 3D)
+├── server/                 # Play Framework server (static pages only)
 │   ├── app/
 │   │   ├── controllers/
 │   │   │   ├── MainController.scala   # Landing + 2D pages
-│   │   │   ├── LifeController.scala   # 2D API endpoints
-│   │   │   └── ThreedController.scala # 3D page + API
-│   │   ├── models/com/bulba/          # 3D-specific models
-│   │   │   ├── Universe.scala         # 3D world container
-│   │   │   ├── Layers.scala           # Z-layer management
-│   │   │   └── canvas/                # 3D canvas types
+│   │   │   └── ThreedController.scala # 3D page
 │   │   └── views/
 │   │       ├── landing.scala.html     # Home page
-│   │       ├── main.scala.html        # 2D view (index)
+│   │       ├── main.scala.html        # 2D view
 │   │       └── threed.scala.html      # 3D view
 │   ├── conf/
 │   │   ├── routes                     # URL routing
@@ -71,8 +65,8 @@ play-life/
 ├── public/                 # Static assets
 │   ├── javascripts/
 │   │   ├── scalajs/                   # Compiled Scala.js output
-│   │   ├── index.js / draw.js         # 2D rendering
-│   │   ├── 3dindex.js / 3ddraw.js     # 3D rendering
+│   │   ├── index.js / draw.js         # 2D UI controls
+│   │   ├── 3dindex.js / 3ddraw.js     # 3D UI + Three.js rendering
 │   │   └── three.js                   # Three.js library
 │   └── stylesheets/
 └── build.sbt               # Multi-project SBT build
@@ -80,40 +74,37 @@ play-life/
 
 ## Architecture
 
-### Rendering Modes
+The server serves static pages only. All game logic runs in the browser via Scala.js.
 
-**2D Mode**: Pure client-side Scala.js
-- GameClient runs simulation in browser using typed arrays (Uint8Array)
-- Direct canvas rendering with 32-bit pixel writes
-- No server communication after initial page load
-- Achieves 60+ FPS
+### GameClient (Scala.js - `client/`)
 
-**3D Mode**: Client-side Scala.js + Three.js
-- GameClient computes 3D cellular automata
-- Three.js renders particles via WebGL shaders
-- Multiple rule sets: 4555, 5766, Pyroclastic, Crystal, Original, Von Neumann
-- Mouse/touch controls for rotation and zoom
+The browser game engine with two modes:
 
-### Key Components
+**2D Mode:**
+- `initOptimized(w, h)` - Initialize 2D grid with Uint8Array
+- `startOptimized()` - Run animation with direct canvas rendering
+- `stepOptimized()` - Single step advance
+- Uses 32-bit pixel writes for maximum performance
 
-**GameClient** (Scala.js - `client/`):
-- `initOptimized(w, h)` - Initialize 2D with typed arrays
-- `startOptimized()` - Run 2D animation at max FPS
+**3D Mode:**
 - `init3D(layers, w, h)` - Initialize 3D grid
-- `start3DAnimation(callback)` - Run 3D with render callback
-- `setRule(name)` - Change 3D rule set
-- `setFpsLimit(fps)` - Limit frame rate
+- `start3DAnimation(callback)` - Run with Three.js render callback
+- `step3D()` - Single step advance
+- `setRule(name)` - Change rule set (4555, 5766, pyroclastic, crystal, original, vonneumann)
 
-**Shared Models** (`shared/`):
+**Common:**
+- `setFpsLimit(fps)` - Limit frame rate (0 = unlimited)
+- `stopAnimation()` - Stop running animation
+- `isRunning()` - Check animation state
+- `getFps()` - Get current FPS
+
+### Shared Models (`shared/`)
+
+Cross-compiled code used by GameClient:
 - `Cell` - Sealed trait: `LiveCell` | `DeadCell`
 - `Canvas` - 2D grid trait with neighbor access
-- `StagingStrategy` - Rules for cell evolution
+- `StagingStrategy` - Rules for cell evolution (B3/S23 for 2D)
 - `GameState` - Mutable wrapper with `advance()`
-
-**3D Models** (`server/app/models/`):
-- `Universe` - Contains `Layers` of 3D canvases
-- `Vector3dCanvas` - 3D grid with z-neighbor access
-- `Life3dStagingStrategy` - 3D rules (26 or 6 neighbors)
 
 ### Type Aliases
 
@@ -130,7 +121,6 @@ type VVC = Vector[Vector[Cell]]
 - SBT 1.10.6
 - ScalaTest 3.2.19
 - Three.js for 3D visualization
-- Guava 33.4.0-jre for session caching
 - Bootstrap 5.3.3 via WebJars
 
 ## Development Rules

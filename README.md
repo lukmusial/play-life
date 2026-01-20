@@ -1,13 +1,13 @@
 # Play-Life: Game of Life in Scala
 
-A high-performance implementation of Conway's Game of Life with 2D and 3D visualizations, built with Scala, Play Framework, and Scala.js.
+A high-performance implementation of Conway's Game of Life with 2D and 3D visualizations. All game logic runs client-side via Scala.js for 60+ FPS performance.
 
 ## Features
 
-- **2D Simulation**: Classic Conway's Game of Life running at 60+ FPS
+- **2D Simulation**: Classic Conway's Game of Life at 60+ FPS
 - **3D Simulation**: Three-dimensional cellular automata with WebGL rendering
 - **Multiple 3D Rules**: 4555, 5766, Pyroclastic, Crystal, Original, Von Neumann
-- **Client-Side Computation**: Game logic runs in browser via Scala.js
+- **Pure Client-Side**: All computation in browser - server only serves static pages
 - **Interactive Controls**: Mouse/touch rotation, zoom, FPS limiting
 
 ## Quick Start
@@ -49,16 +49,15 @@ sbt server/run
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        Play Framework Server                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐  │
-│  │ MainController  │  │ LifeController  │  │ ThreedController    │  │
-│  │ ─────────────── │  │ ────────────── │  │ ─────────────────── │  │
-│  │ GET /           │  │ GET /life      │  │ GET /3d             │  │
-│  │ GET /2d         │  │ POST /reset    │  │ GET /threed/life    │  │
-│  │ GET /3d         │  │                │  │ POST /threed/reset  │  │
-│  └─────────────────┘  └─────────────────┘  └─────────────────────┘  │
+│                   Play Framework Server (Static Only)                │
+│  ┌─────────────────────────┐  ┌─────────────────────────────────┐  │
+│  │    MainController       │  │    ThreedController             │  │
+│  │    ──────────────       │  │    ────────────────             │  │
+│  │    GET /  (landing)     │  │    GET /3d                      │  │
+│  │    GET /2d              │  │    GET /threed                  │  │
+│  └─────────────────────────┘  └─────────────────────────────────┘  │
 │                                                                      │
-│  Static Assets: /public/javascripts/scalajs/main.js                 │
+│  Static Assets: HTML, CSS, JavaScript, Scala.js output              │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -69,73 +68,62 @@ sbt server/run
 │                        SBT Multi-Project                          │
 ├──────────────────┬─────────────────────┬─────────────────────────┤
 │     shared/      │      client/        │        server/          │
-│   (JVM + JS)     │    (Scala.js)       │    (Play Framework)     │
+│   (JVM + JS)     │    (Scala.js)       │   (Static pages only)   │
 ├──────────────────┼─────────────────────┼─────────────────────────┤
 │                  │                     │                         │
 │  Cell            │  GameClient         │  Controllers            │
-│  ├─ LiveCell     │  ├─ init()          │  ├─ MainController      │
-│  └─ DeadCell     │  ├─ initOptimized() │  ├─ LifeController      │
-│                  │  ├─ init3D()        │  └─ ThreedController    │
-│  Canvas          │  ├─ step()          │                         │
-│  ├─ Vector2d     │  ├─ startOptimized()│  3D Models              │
-│  ├─ Random       │  ├─ start3DAnimation│  ├─ Universe            │
-│  └─ String       │  ├─ setRule()       │  ├─ Layers              │
-│                  │  └─ setFpsLimit()   │  └─ Vector3dCanvas      │
+│  ├─ LiveCell     │  ├─ initOptimized() │  ├─ MainController      │
+│  └─ DeadCell     │  ├─ startOptimized()│  └─ ThreedController    │
+│                  │  ├─ init3D()        │                         │
+│  Canvas          │  ├─ start3DAnimation│  Views                  │
+│  ├─ Vector2d     │  ├─ setRule()       │  ├─ landing.html        │
+│  ├─ Random       │  ├─ setFpsLimit()   │  ├─ main.html (2D)      │
+│  └─ String       │  └─ stopAnimation() │  └─ threed.html (3D)    │
+│                  │                     │                         │
 │  GameState       │                     │                         │
-│  └─ advance()    │                     │  Views                  │
-│                  │                     │  ├─ landing.html        │
-│  StagingStrategy │                     │  ├─ main.html (2D)      │
-│  ├─ Life2d       │                     │  └─ threed.html (3D)    │
-│  └─ Life3d       │                     │                         │
+│  └─ advance()    │                     │                         │
+│                  │                     │                         │
+│  StagingStrategy │                     │                         │
+│  └─ Life2d       │                     │                         │
 └──────────────────┴─────────────────────┴─────────────────────────┘
 ```
 
 ### Data Flow
 
 ```
-2D Mode (Client-Side Only):
-┌────────┐    page load     ┌────────┐
-│ Server │ ───────────────► │Browser │
-└────────┘   HTML + JS      └───┬────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              │                 ▼                 │
-              │  ┌──────────────────────────┐    │
-              │  │  GameClient.initOptimized│    │
-              │  │  ────────────────────────│    │
-              │  │  1. Create Uint8Array    │    │
-              │  │  2. Random init (10%)    │    │
-              │  └────────────┬─────────────┘    │
-              │               │                  │
-              │               ▼                  │
-              │  ┌──────────────────────────┐    │
-              │  │  Animation Loop (60fps)  │◄───┼───┐
-              │  │  ────────────────────────│    │   │
-              │  │  1. advanceFast()        │    │   │
-              │  │  2. renderFromTypedArray │    │   │
-              │  │  3. requestAnimationFrame│────┼───┘
-              │  └──────────────────────────┘    │
-              │          Browser (no server)    │
-              └─────────────────────────────────┘
+Page Load:
+┌────────┐    HTML + JS      ┌────────┐
+│ Server │ ─────────────────►│Browser │
+└────────┘                   └───┬────┘
+     │                           │
+     │  No further communication │
+     ▼                           ▼
+┌────────┐               ┌──────────────────────────────┐
+│ Done   │               │  GameClient runs locally     │
+└────────┘               │  ──────────────────────────  │
+                         │  • Initialize grid           │
+                         │  • Run simulation loop       │
+                         │  • Render to canvas/WebGL    │
+                         │  • Handle user input         │
+                         └──────────────────────────────┘
 
-3D Mode (Client Compute + WebGL Render):
-┌────────────────────────────────────────────────────────┐
-│                      Browser                            │
-│  ┌─────────────────┐      ┌─────────────────────────┐  │
-│  │   GameClient    │      │      Three.js           │  │
-│  │   ───────────   │      │      ─────────          │  │
-│  │   init3D()      │      │                         │  │
-│  │        │        │      │   ┌─────────────────┐   │  │
-│  │        ▼        │      │   │ Particle System │   │  │
-│  │   advance3D()───┼──────┼──►│ (WebGL Shaders) │   │  │
-│  │        │        │ data │   └─────────────────┘   │  │
-│  │        ▼        │      │           │             │  │
-│  │   get3DState()  │      │           ▼             │  │
-│  │                 │      │   ┌─────────────────┐   │  │
-│  └─────────────────┘      │   │    Renderer     │   │  │
-│                           │   └─────────────────┘   │  │
-│                           └─────────────────────────┘  │
-└────────────────────────────────────────────────────────┘
+2D Animation Loop:
+┌──────────────────────────┐
+│  requestAnimationFrame   │◄──────┐
+│  ────────────────────────│       │
+│  1. advanceFast()        │       │
+│  2. renderFromTypedArray │       │
+│  3. updateFpsDisplay     │───────┘
+└──────────────────────────┘
+
+3D Animation Loop:
+┌──────────────────────────┐
+│  requestAnimationFrame   │◄──────┐
+│  ────────────────────────│       │
+│  1. advance3D()          │       │
+│  2. get3DState()         │       │
+│  3. drawRaw() → Three.js │───────┘
+└──────────────────────────┘
 ```
 
 ### 3D Rules
@@ -152,7 +140,7 @@ sbt server/run
 ## Tech Stack
 
 - **Scala 2.13.16** - Core language
-- **Play Framework 3.0.6** - Web server
+- **Play Framework 3.0.6** - Static page server
 - **Scala.js 1.17.0** - Browser compilation
 - **Three.js** - 3D WebGL rendering
 - **Bootstrap 5.3.3** - UI styling
@@ -171,7 +159,7 @@ sbt compile
 sbt client/fullLinkJS
 ```
 
-## Other implementations
+## Other Implementations
 
-http://rosettacode.org/wiki/Conway's_Game_of_Life/Scala
-http://www.luigip.com/?p=133
+- http://rosettacode.org/wiki/Conway's_Game_of_Life/Scala
+- http://www.luigip.com/?p=133
