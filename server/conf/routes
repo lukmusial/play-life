@@ -1,0 +1,19 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Landing page
+GET     /                           controllers.MainController.landing()
+
+# 2D and 3D simulations
+GET     /2d                         controllers.MainController.index()
+GET     /3d                         controllers.ThreedController.index()
+
+# Legacy URL redirects
+GET     /threed                     controllers.ThreedController.index()
+
+# Map static resources from the /public folder to the /assets URL path
+GET     /assets/*file               controllers.Assets.at(path="/public", file)
+
+# WebJars assets
+GET     /webjars/*file              org.webjars.play.WebJarAssets.at(file)

@@ -1,0 +1,94 @@
+@()(implicit webJarsUtil: org.webjars.play.WebJarsUtil)
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game of Life</title>
+    <link rel='stylesheet' href='/webjars/bootstrap/5.3.3/css/bootstrap.min.css'>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .container {
+            text-align: center;
+            color: #fff;
+        }
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(119, 202, 230, 0.5);
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            color: #aaa;
+            margin-bottom: 3rem;
+        }
+        .cards {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(119, 202, 230, 0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 300px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            background: rgba(119, 202, 230, 0.1);
+            border-color: rgba(119, 202, 230, 0.6);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            color: #fff;
+            text-decoration: none;
+        }
+        .card-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        .card p {
+            color: #888;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+        .card:hover p {
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Game of Life</h1>
+        <p class="subtitle">Conway's cellular automaton simulation</p>
+
+        <div class="cards">
+            <a href="/2d" class="card">
+                <div class="card-icon">&#9638;</div>
+                <h2>2D Simulation</h2>
+                <p>Classic flat grid visualization with high-performance rendering</p>
+            </a>
+
+            <a href="/3d" class="card">
+                <div class="card-icon">&#9635;</div>
+                <h2>3D Simulation</h2>
+                <p>Three-dimensional visualization with multiple rule sets and shapes</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

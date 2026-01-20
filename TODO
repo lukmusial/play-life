@@ -1,4 +1,0 @@
-parallel refreshing of particle planes using parallel.js
-initial seed based on a 2d or 3d binary image
-changes in algorithm to reuse latest ruling if a neighboring cluster did not change
-change json plane encoding to something more sensible than 2d list of longs
