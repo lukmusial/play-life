@@ -14,10 +14,28 @@ class UISpec extends AnyWordSpec with Matchers with GuiceOneServerPerSuite {
 
   "The Application" should {
 
-    "serve the index page with correct structure" in {
+    "serve the landing page with correct structure" in {
       val wsClient = app.injector.instanceOf[WSClient]
       val response = Await.result(
         wsClient.url(s"http://localhost:$port/").get(),
+        10.seconds
+      )
+
+      response.status shouldBe OK
+      response.contentType should include("text/html")
+
+      val body = response.body
+      body should include("Game of Life")
+      body should include("2D Simulation")
+      body should include("3D Simulation")
+      body should include("""href="/2d"""")
+      body should include("""href="/3d"""")
+    }
+
+    "serve the 2D page with correct structure" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val response = Await.result(
+        wsClient.url(s"http://localhost:$port/2d").get(),
         10.seconds
       )
 
@@ -48,6 +66,48 @@ class UISpec extends AnyWordSpec with Matchers with GuiceOneServerPerSuite {
       body should include("id=\"resetButton\"")
       body should include("vertexshader")
       body should include("fragmentshader")
+    }
+
+    "serve 3D page with all rule buttons" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val response = Await.result(
+        wsClient.url(s"http://localhost:$port/threed").get(),
+        10.seconds
+      )
+
+      response.status shouldBe OK
+      val body = response.body
+
+      // Verify all rule buttons exist with correct data-rule attributes
+      body should include("""data-rule="4555"""")
+      body should include("""data-rule="5766"""")
+      body should include("""data-rule="pyroclastic"""")
+      body should include("""data-rule="crystal"""")
+      body should include("""data-rule="original"""")
+      body should include("""data-rule="vonneumann"""")
+
+      // Verify all buttons have the rule-btn class
+      body should include("""class="btn btn-sm btn-outline-info rule-btn" data-rule="4555"""")
+      body should include("""class="btn btn-sm btn-outline-info rule-btn" data-rule="5766"""")
+      body should include("""class="btn btn-sm btn-outline-info rule-btn" data-rule="pyroclastic"""")
+      body should include("""class="btn btn-sm btn-outline-info rule-btn" data-rule="crystal"""")
+      body should include("""class="btn btn-sm btn-outline-info rule-btn" data-rule="original"""")
+      body should include("""class="btn btn-sm btn-outline-info rule-btn" data-rule="vonneumann"""")
+
+      // Verify control panel has high z-index
+      body should include("z-index: 1000")
+    }
+
+    "have Scala.js GameClient loaded" in {
+      val wsClient = app.injector.instanceOf[WSClient]
+      val response = Await.result(
+        wsClient.url(s"http://localhost:$port/threed").get(),
+        10.seconds
+      )
+
+      val body = response.body
+      // Verify Scala.js script is included
+      body should include("scalajs/main.js")
     }
 
     "serve Bootstrap CSS from webjars" in {
@@ -180,10 +240,10 @@ class UISpec extends AnyWordSpec with Matchers with GuiceOneServerPerSuite {
       stateResponse.body should startWith("[")
     }
 
-    "include correct webjar paths in index page" in {
+    "include correct webjar paths in 2D page" in {
       val wsClient = app.injector.instanceOf[WSClient]
       val response = Await.result(
-        wsClient.url(s"http://localhost:$port/").get(),
+        wsClient.url(s"http://localhost:$port/2d").get(),
         10.seconds
       )
 

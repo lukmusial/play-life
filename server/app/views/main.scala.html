@@ -13,15 +13,39 @@
     <script type="text/javascript" src='@routes.Assets.at("javascripts/index.js")'></script>
 
 </head>
-<body>
+<body style="background-color: #000; margin: 0; padding: 0;">
 
-    <div class="">
-        <button class="button" id="autoRefreshButton">Auto Refresh</button>
-        <button class="button" id="singleRefreshButton">Single Step</button>
-        <button class="button" id="resetButton" data-width="400" data-height="424">Reset</button>
-        <span id="fpsCounter" style="margin-left: 20px; font-family: monospace; font-size: 14px; color: #00ff00;">FPS: 0</span>
+    <div id="controls" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(0,0,0,0.8); padding: 10px;">
+        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <button class="btn btn-sm btn-outline-success" id="autoRefreshButton">Auto Refresh</button>
+            <button class="btn btn-sm btn-outline-warning" id="singleRefreshButton">Single Step</button>
+            <button class="btn btn-sm btn-outline-danger" id="resetButton">Reset</button>
+            <span id="fpsCounter" style="font-weight: bold; color: #aaa;"></span>
+
+            <span style="color: #aaa; margin-left: 10px;">Size:</span>
+            <select id="canvasSize" class="form-select form-select-sm" style="width: auto; background-color: #333; color: #aaa; border-color: #555;">
+                <option value="browser" selected>Browser</option>
+                <option value="800x600">800 x 600</option>
+                <option value="1024x768">1024 x 768</option>
+                <option value="1280x720">1280 x 720</option>
+                <option value="1920x1080">1920 x 1080</option>
+                <option value="400x400">400 x 400</option>
+                <option value="200x200">200 x 200</option>
+            </select>
+
+            <span style="color: #aaa;">Max FPS:</span>
+            <select id="fpsLimit" class="form-select form-select-sm" style="width: auto; background-color: #333; color: #aaa; border-color: #555;">
+                <option value="0">Unlimited</option>
+                <option value="60" selected>60</option>
+                <option value="30">30</option>
+                <option value="15">15</option>
+                <option value="10">10</option>
+                <option value="5">5</option>
+                <option value="1">1</option>
+            </select>
+        </div>
     </div>
-    <div class="container">
+    <div style="padding-top: 60px;">
         @content
     </div>
 

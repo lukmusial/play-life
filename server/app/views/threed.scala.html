@@ -10,11 +10,38 @@
     <script type="text/javascript" src="@routes.LifeController.javascriptRoutes()"></script>
     <script type="text/javascript"  src='@routes.Assets.at("javascripts/three.js")'></script>
     <script type="text/javascript"  src='@routes.Assets.at("javascripts/parallel.js")'></script>
+    <script type="text/javascript" src='@routes.Assets.at("javascripts/scalajs/main.js")'></script>
 </head>
-<body onload="resetButton.click()">
-<button class="button" id="autoRefreshButton">Auto Refresh</button>
-<button class="button" id="singleRefreshButton">Single Step</button>
-<button class="button" id="resetButton" data-layers="20" data-width="106" data-height="106">Reset</button>
+<body>
+<div id="controls" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(0,0,0,0.8); padding: 10px;">
+    <div style="margin-bottom: 8px; display: flex; align-items: center;">
+        <button class="btn btn-sm btn-outline-success" id="autoRefreshButton">Auto Refresh</button>
+        <button class="btn btn-sm btn-outline-warning" id="singleRefreshButton" style="margin-left: 5px;">Single Step</button>
+        <button class="btn btn-sm btn-outline-danger" id="resetButton" data-layers="20" data-width="106" data-height="106" style="margin-left: 5px;">Reset</button>
+        <span id="fpsCounter" style="margin-left: 20px; font-weight: bold; color: #aaa;"></span>
+        <span id="rotationStatus" style="margin-left: 15px; color: #888; font-size: 12px;"></span>
+        <span style="margin-left: 20px; color: #aaa;">Max FPS:</span>
+        <select id="fpsLimit" class="form-select form-select-sm" style="width: auto; display: inline-block; margin-left: 5px; background-color: #333; color: #aaa; border-color: #555;">
+            <option value="0">Unlimited</option>
+            <option value="60" selected>60</option>
+            <option value="30">30</option>
+            <option value="15">15</option>
+            <option value="10">10</option>
+            <option value="5">5</option>
+            <option value="1">1</option>
+        </select>
+    </div>
+    <div style="display: flex; align-items: center;">
+        <span style="margin-right: 10px; font-weight: bold; color: #aaa;">Rule:</span>
+        <button class="btn btn-sm btn-outline-info rule-btn" data-rule="4555" title="B5/S4,5 - Most life-like, stable structures">4555</button>
+        <button class="btn btn-sm btn-outline-info rule-btn" data-rule="5766" title="B6,7/S5,6 - Slow growth, interesting patterns" style="margin-left: 5px;">5766</button>
+        <button class="btn btn-sm btn-outline-info rule-btn" data-rule="pyroclastic" title="B4-5/S5 - Explosive bursts, unstable" style="margin-left: 5px;">Pyroclastic</button>
+        <button class="btn btn-sm btn-outline-info rule-btn" data-rule="crystal" title="B6/S5-7 - Slow crystalline growth" style="margin-left: 5px;">Crystal</button>
+        <button class="btn btn-sm btn-outline-info rule-btn" data-rule="original" title="B9-11/S6-11 - Original 3D Life" style="margin-left: 5px;">Original</button>
+        <button class="btn btn-sm btn-outline-info rule-btn" data-rule="vonneumann" title="B1-2/S2-4 - Von Neumann 6 neighbors" style="margin-left: 5px;">Von Neumann</button>
+        <span id="ruleInfo" style="margin-left: 15px; font-style: italic; color: #888;"></span>
+    </div>
+</div>
 <script type="x-shader/x-vertex" id="vertexshader">
 
     attribute float alpha;

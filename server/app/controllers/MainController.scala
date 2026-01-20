@@ -10,6 +10,10 @@ class MainController @Inject()(
     implicit val webJarsUtil: WebJarsUtil
 ) extends BaseController {
 
+  def landing = Action {
+    Ok(views.html.landing())
+  }
+
   def index = Action {
     Ok(views.html.index())
   }

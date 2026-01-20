@@ -4,40 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Play-Life is a Scala implementation of Conway's Game of Life using Play Framework 3.0 with both 2D and 3D visualization capabilities. It uses HTML5 Canvas for 2D rendering and Three.js for 3D visualization.
-
-**Key Feature**: The 2D game logic runs entirely in the browser via Scala.js, eliminating network latency for 60 FPS performance.
-
-## Project Structure
-
-```
-play-life/
-├── shared/                 # Cross-compiled code (JVM + JS)
-│   └── src/main/scala/
-│       └── models/com/bulba/
-│           ├── Cell.scala
-│           ├── GameState.scala
-│           ├── canvas/         # 2D canvas implementations
-│           └── stagingstrategy/
-├── client/                 # Scala.js browser client
-│   └── src/main/scala/
-│       └── client/
-│           └── GameClient.scala
-├── server/                 # Play Framework server
-│   ├── app/
-│   │   ├── controllers/
-│   │   ├── models/com/bulba/   # 3D-specific code only
-│   │   └── views/
-│   ├── conf/
-│   └── test/
-├── public/                 # Static assets
-│   ├── javascripts/
-│   │   ├── scalajs/       # Compiled Scala.js output
-│   │   ├── draw.js
-│   │   └── index.js
-│   └── stylesheets/
-└── build.sbt              # Multi-project SBT build
-```
+Play-Life is a Scala implementation of Conway's Game of Life using Play Framework 3.0 with both 2D and 3D visualization capabilities. The 2D simulation runs entirely in the browser via Scala.js for 60+ FPS performance. The 3D simulation uses Three.js with WebGL particle rendering.
 
 ## Build and Run Commands
 
@@ -49,7 +16,7 @@ sbt client/fastLinkJS
 sbt server/run
 
 # Run all tests
-sbt server/test
+sbt test
 
 # Run a single test class
 sbt "server/testOnly test.UISpec"
@@ -59,50 +26,96 @@ sbt compile
 
 # Full optimized Scala.js build (for production)
 sbt client/fullLinkJS
-
-# Interactive SBT shell
-sbt
 ```
 
 ## URLs
 
-- 2D visualization: http://localhost:9000
-- 3D visualization: http://localhost:9000/threed
+- Landing page: http://localhost:9000/
+- 2D visualization: http://localhost:9000/2d
+- 3D visualization: http://localhost:9000/3d
+- Legacy 3D URL: http://localhost:9000/threed (redirects to /3d)
+
+## Project Structure
+
+```
+play-life/
+├── shared/                 # Cross-compiled code (JVM + JS)
+│   └── src/main/scala/
+│       └── models/com/bulba/
+│           ├── Cell.scala           # LiveCell/DeadCell
+│           ├── GameState.scala      # Mutable game wrapper
+│           ├── canvas/              # 2D canvas implementations
+│           └── stagingstrategy/     # Cell evolution rules
+├── client/                 # Scala.js browser client
+│   └── src/main/scala/
+│       └── client/
+│           └── GameClient.scala     # Browser game engine
+├── server/                 # Play Framework server
+│   ├── app/
+│   │   ├── controllers/
+│   │   │   ├── MainController.scala   # Landing + 2D pages
+│   │   │   ├── LifeController.scala   # 2D API endpoints
+│   │   │   └── ThreedController.scala # 3D page + API
+│   │   ├── models/com/bulba/          # 3D-specific models
+│   │   │   ├── Universe.scala         # 3D world container
+│   │   │   ├── Layers.scala           # Z-layer management
+│   │   │   └── canvas/                # 3D canvas types
+│   │   └── views/
+│   │       ├── landing.scala.html     # Home page
+│   │       ├── main.scala.html        # 2D view (index)
+│   │       └── threed.scala.html      # 3D view
+│   ├── conf/
+│   │   ├── routes                     # URL routing
+│   │   └── application.conf
+│   └── test/
+├── public/                 # Static assets
+│   ├── javascripts/
+│   │   ├── scalajs/                   # Compiled Scala.js output
+│   │   ├── index.js / draw.js         # 2D rendering
+│   │   ├── 3dindex.js / 3ddraw.js     # 3D rendering
+│   │   └── three.js                   # Three.js library
+│   └── stylesheets/
+└── build.sbt               # Multi-project SBT build
+```
 
 ## Architecture
 
-### Shared Module (`shared/`)
+### Rendering Modes
 
-Cross-compiled code that runs on both JVM and browser:
+**2D Mode**: Pure client-side Scala.js
+- GameClient runs simulation in browser using typed arrays (Uint8Array)
+- Direct canvas rendering with 32-bit pixel writes
+- No server communication after initial page load
+- Achieves 60+ FPS
 
-- **Cell** (`Cell.scala`): Sealed trait with `LiveCell` and `DeadCell` case objects
-- **Canvas** (`canvas/Canvas.scala`): Trait representing a 2D grid of cells
-  - `Vector2dCanvas`, `RandomCanvas`, `StringCanvas` for 2D
-- **StagingStrategy**: Rules for cell evolution
-  - `Life2dStagingStrategy`: Standard Conway rules (B3/S23)
-  - `Life3dStagingStrategy`: 3D variant (B9-11/S6-11)
-- **GameState**: Mutable wrapper for canvas with `advance()` method
+**3D Mode**: Client-side Scala.js + Three.js
+- GameClient computes 3D cellular automata
+- Three.js renders particles via WebGL shaders
+- Multiple rule sets: 4555, 5766, Pyroclastic, Crystal, Original, Von Neumann
+- Mouse/touch controls for rotation and zoom
 
-### Client Module (`client/`)
+### Key Components
 
-Scala.js browser client that runs game logic locally:
+**GameClient** (Scala.js - `client/`):
+- `initOptimized(w, h)` - Initialize 2D with typed arrays
+- `startOptimized()` - Run 2D animation at max FPS
+- `init3D(layers, w, h)` - Initialize 3D grid
+- `start3DAnimation(callback)` - Run 3D with render callback
+- `setRule(name)` - Change 3D rule set
+- `setFpsLimit(fps)` - Limit frame rate
 
-- **GameClient**: Exported to JavaScript with methods:
-  - `init(width, height)`: Initialize random grid
-  - `step()`: Advance one generation
-  - `startAnimation(callback)`: Run at 60fps
-  - `stopAnimation()`: Stop animation
-  - `getFps()`: Get current FPS
+**Shared Models** (`shared/`):
+- `Cell` - Sealed trait: `LiveCell` | `DeadCell`
+- `Canvas` - 2D grid trait with neighbor access
+- `StagingStrategy` - Rules for cell evolution
+- `GameState` - Mutable wrapper with `advance()`
 
-### Server Module (`server/`)
+**3D Models** (`server/app/models/`):
+- `Universe` - Contains `Layers` of 3D canvases
+- `Vector3dCanvas` - 3D grid with z-neighbor access
+- `Life3dStagingStrategy` - 3D rules (26 or 6 neighbors)
 
-Play Framework server with 3D-specific code:
-
-- **Controllers**: HTTP endpoints for reset/state
-- **3D Models**: `Vector3dCanvas`, `Universe`, `Layers` (JVM-only, uses Futures)
-- **Views**: HTML templates
-
-### Type Aliases (`package.scala`)
+### Type Aliases
 
 ```scala
 type VC = Vector[Cell]
@@ -116,16 +129,15 @@ type VVC = Vector[Vector[Cell]]
 - Scala.js 1.17.0
 - SBT 1.10.6
 - ScalaTest 3.2.19
-- scalajs-dom 2.8.0
 - Three.js for 3D visualization
-- Guava 33.4.0-jre for caching
+- Guava 33.4.0-jre for session caching
 - Bootstrap 5.3.3 via WebJars
 
 ## Development Rules
 
 **MANDATORY: Follow these rules when making changes:**
 
-1. **Run tests after every code change**: After modifying any code, always run `sbt server/test` to ensure all tests pass before proceeding.
+1. **Run tests after every code change**: After modifying any code, always run `sbt test` to ensure all tests pass before proceeding.
 
 2. **Recompile Scala.js after client changes**: After modifying `client/` or `shared/` code, run `sbt client/fastLinkJS` to regenerate the JavaScript.
 

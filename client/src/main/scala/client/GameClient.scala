@@ -29,6 +29,8 @@ object GameClient {
   private var currentFps: Int = 0
   private var lastFpsUpdate: Double = 0
   private var animationFrameId: Int = 0
+  private var fpsLimit: Int = 60  // 0 = unlimited
+  private var minFrameTime: Double = 1000.0 / 60  // milliseconds per frame
 
   // Cached rendering resources
   private var cachedImageData: dom.ImageData = _
@@ -41,6 +43,26 @@ object GameClient {
   private var grid: Uint8Array = _
   private var nextGrid: Uint8Array = _
   private var useFastPath: Boolean = true
+
+  // 3D grid state
+  private var grid3d: Uint8Array = _
+  private var nextGrid3d: Uint8Array = _
+  private var numLayers: Int = 0
+
+  // 3D Life rules
+  // Format: (birthMin, birthMax, surviveMin, surviveMax, useVonNeumann)
+  private var currentRule: String = "4555"
+  // 3D Life rules: (birthMin, birthMax, surviveMin, surviveMax, useVonNeumann)
+  // With 26 neighbors (Moore), average neighbor count at 30% density is ~7.8
+  // With 6 neighbors (Von Neumann), average is ~1.8
+  private val rules: Map[String, (Int, Int, Int, Int, Boolean)] = Map(
+    "original" -> (9, 11, 6, 11, false),   // B9-11/S6-11 - Original 3D Life
+    "4555" -> (5, 5, 4, 5, false),         // B5/S4,5 - Most life-like, stable structures
+    "5766" -> (6, 7, 5, 6, false),         // B6,7/S5,6 - Slow growth, interesting patterns
+    "pyroclastic" -> (4, 5, 5, 5, false),  // B4-5/S5 - Explosive bursts, unstable
+    "crystal" -> (6, 6, 5, 7, false),      // B6/S5-7 - Slow crystalline growth, stable
+    "vonneumann" -> (1, 2, 2, 4, true)     // B1-2/S2-4 - Von Neumann 6-neighbor, sparse patterns
+  )
 
   // Precomputed colors as 32-bit ABGR values (little-endian)
   private val ALIVE_COLOR: Int = 0xFFE6CA77  // #77CAE6 with alpha 255
@@ -165,6 +187,246 @@ object GameClient {
     cachedCtx.putImageData(cachedImageData, 0, 0)
   }
 
+  // ============ 3D Game of Life ============
+
+  /**
+   * Set the 3D Life rule.
+   * Available rules: "original", "4555", "5766", "pyroclastic", "crystal", "vonneumann"
+   */
+  @JSExport
+  def setRule(ruleName: String): Unit = {
+    if (rules.contains(ruleName)) {
+      currentRule = ruleName
+      dom.console.log(s"3D rule set to: $ruleName")
+    } else {
+      dom.console.log(s"Unknown rule: $ruleName, keeping current: $currentRule")
+    }
+  }
+
+  /**
+   * Get available rule names.
+   */
+  @JSExport
+  def getAvailableRules(): js.Array[String] = {
+    js.Array("original", "4555", "5766", "pyroclastic", "crystal", "vonneumann")
+  }
+
+  /**
+   * Get current rule name.
+   */
+  @JSExport
+  def getCurrentRule(): String = currentRule
+
+  /**
+   * Initialize 3D game with typed arrays.
+   * @param layers Number of z-layers
+   * @param width Grid width (x)
+   * @param height Grid height (y)
+   */
+  @JSExport
+  def init3D(layers: Int, width: Int, height: Int): Unit = {
+    numLayers = layers
+    gridWidth = width
+    gridHeight = height
+
+    val size = layers * width * height
+    grid3d = new Uint8Array(size)
+    nextGrid3d = new Uint8Array(size)
+
+    // Random initialization (30% alive for 3D)
+    var i = 0
+    while (i < size) {
+      grid3d(i) = if (js.Math.random() > 0.7) 1 else 0
+      i += 1
+    }
+
+    running = false
+    frameCount = 0
+    lastFpsUpdate = window.performance.now()
+  }
+
+  /**
+   * Get 3D grid data for Three.js rendering.
+   * Returns array of layer data, each layer is array of row data.
+   */
+  @JSExport
+  def get3DState(): js.Array[js.Array[js.Array[Int]]] = {
+    val result = new js.Array[js.Array[js.Array[Int]]](numLayers)
+
+    var layer = 0
+    while (layer < numLayers) {
+      val layerData = new js.Array[js.Array[Int]](gridWidth)
+      var row = 0
+      while (row < gridWidth) {
+        val rowData = new js.Array[Int](gridHeight)
+        var col = 0
+        while (col < gridHeight) {
+          rowData(col) = grid3d(layer * gridWidth * gridHeight + row * gridHeight + col)
+          col += 1
+        }
+        layerData(row) = rowData
+        row += 1
+      }
+      result(layer) = layerData
+      layer += 1
+    }
+    result
+  }
+
+  /**
+   * Advance 3D simulation one step using the current rule.
+   */
+  @JSExport
+  def advance3D(): Unit = {
+    val (birthMin, birthMax, surviveMin, surviveMax, useVonNeumann) = rules(currentRule)
+    val layerSize = gridWidth * gridHeight
+
+    // Debug: log rule application on first frame after rule change
+    if (frameCount == 0) {
+      dom.console.log(s"Applying rule: $currentRule - B$birthMin-$birthMax/S$surviveMin-$surviveMax, VonNeumann=$useVonNeumann")
+    }
+
+    var layer = 0
+    while (layer < numLayers) {
+      var row = 0
+      while (row < gridWidth) {
+        var col = 0
+        while (col < gridHeight) {
+          val idx = layer * layerSize + row * gridHeight + col
+          val neighbors = if (useVonNeumann) {
+            countNeighborsVonNeumann(layer, row, col)
+          } else {
+            countNeighborsMoore(layer, row, col)
+          }
+          val alive = grid3d(idx) == 1
+
+          nextGrid3d(idx) = if (alive) {
+            if (neighbors >= surviveMin && neighbors <= surviveMax) 1 else 0
+          } else {
+            if (neighbors >= birthMin && neighbors <= birthMax) 1 else 0
+          }
+          col += 1
+        }
+        row += 1
+      }
+      layer += 1
+    }
+
+    // Swap grids
+    val temp = grid3d
+    grid3d = nextGrid3d
+    nextGrid3d = temp
+  }
+
+  /**
+   * Count neighbors using Moore neighborhood (26 neighbors).
+   */
+  private def countNeighborsMoore(layer: Int, row: Int, col: Int): Int = {
+    val layerSize = gridWidth * gridHeight
+    var count = 0
+
+    var dz = -1
+    while (dz <= 1) {
+      var dr = -1
+      while (dr <= 1) {
+        var dc = -1
+        while (dc <= 1) {
+          if (!(dz == 0 && dr == 0 && dc == 0)) {
+            val z = layer + dz
+            val r = row + dr
+            val c = col + dc
+            if (z >= 0 && z < numLayers && r >= 0 && r < gridWidth && c >= 0 && c < gridHeight) {
+              count += grid3d(z * layerSize + r * gridHeight + c)
+            }
+          }
+          dc += 1
+        }
+        dr += 1
+      }
+      dz += 1
+    }
+    count
+  }
+
+  /**
+   * Count neighbors using Von Neumann neighborhood (6 face-adjacent neighbors).
+   */
+  private def countNeighborsVonNeumann(layer: Int, row: Int, col: Int): Int = {
+    val layerSize = gridWidth * gridHeight
+    var count = 0
+
+    // Check 6 face-adjacent neighbors: up, down, left, right, front, back
+    if (layer > 0) count += grid3d((layer - 1) * layerSize + row * gridHeight + col)
+    if (layer < numLayers - 1) count += grid3d((layer + 1) * layerSize + row * gridHeight + col)
+    if (row > 0) count += grid3d(layer * layerSize + (row - 1) * gridHeight + col)
+    if (row < gridWidth - 1) count += grid3d(layer * layerSize + (row + 1) * gridHeight + col)
+    if (col > 0) count += grid3d(layer * layerSize + row * gridHeight + (col - 1))
+    if (col < gridHeight - 1) count += grid3d(layer * layerSize + row * gridHeight + (col + 1))
+
+    count
+  }
+
+  /**
+   * Start 3D animation loop.
+   * @param drawCallback JavaScript function to call with 3D state each frame
+   */
+  @JSExport
+  def start3DAnimation(drawCallback: js.Function1[js.Array[js.Array[js.Array[Int]]], Unit]): Unit = {
+    if (running) return
+    running = true
+    useOptimizedRendering = true
+    lastFrameTime = window.performance.now()
+    lastFpsUpdate = lastFrameTime
+    frameCount = 0
+
+    def animate3D(timestamp: Double): Unit = {
+      if (!running) return
+
+      // FPS limiting - skip frame if not enough time has passed
+      val timeSinceLastFrame = timestamp - lastFrameTime
+      if (fpsLimit > 0 && timeSinceLastFrame < minFrameTime) {
+        animationFrameId = window.requestAnimationFrame(animate3D _)
+        return
+      }
+
+      val t0 = window.performance.now()
+      advance3D()
+      val t1 = window.performance.now()
+      val state = get3DState()
+      drawCallback(state)
+      val t2 = window.performance.now()
+
+      // Log timing every second
+      if (frameCount == 0) {
+        dom.console.log(s"3D advance: ${t1-t0}ms, render: ${t2-t1}ms")
+      }
+
+      // Update FPS counter
+      frameCount += 1
+      val elapsed = timestamp - lastFpsUpdate
+      if (elapsed >= 1000) {
+        currentFps = ((frameCount * 1000) / elapsed).toInt
+        frameCount = 0
+        lastFpsUpdate = timestamp
+        updateFpsDisplay()
+      }
+
+      lastFrameTime = timestamp
+      animationFrameId = window.requestAnimationFrame(animate3D _)
+    }
+
+    animationFrameId = window.requestAnimationFrame(animate3D _)
+  }
+
+  /**
+   * Single step for 3D.
+   */
+  @JSExport
+  def step3D(): js.Array[js.Array[js.Array[Int]]] = {
+    advance3D()
+    get3DState()
+  }
+
   private def initRenderCache(): Unit = {
     val canvasEl = dom.document.getElementById("canvas").asInstanceOf[html.Canvas]
     if (canvasEl != null) {
@@ -271,6 +533,13 @@ object GameClient {
 
     def animateOptimized(timestamp: Double): Unit = {
       if (!running) return
+
+      // FPS limiting - skip frame if not enough time has passed
+      val timeSinceLastFrame = timestamp - lastFrameTime
+      if (fpsLimit > 0 && timeSinceLastFrame < minFrameTime) {
+        animationFrameId = window.requestAnimationFrame(animateOptimized _)
+        return
+      }
 
       val t0 = window.performance.now()
       advanceFast()
@@ -465,13 +734,27 @@ object GameClient {
   @JSExport
   def getFps(): Int = currentFps
 
+  /**
+   * Set FPS limit (0 = unlimited).
+   */
+  @JSExport
+  def setFpsLimit(limit: Int): Unit = {
+    fpsLimit = limit
+    minFrameTime = if (limit > 0) 1000.0 / limit else 0
+  }
+
+  /**
+   * Get current FPS limit.
+   */
+  @JSExport
+  def getFpsLimit(): Int = fpsLimit
+
   private var useOptimizedRendering: Boolean = false
 
   private def updateFpsDisplay(): Unit = {
     val fpsElement = dom.document.getElementById("fpsCounter")
     if (fpsElement != null) {
-      val mode = if (useOptimizedRendering) "Optimized" else "Scala.js"
-      fpsElement.textContent = s"FPS: $currentFps ($mode)"
+      fpsElement.textContent = s"FPS: $currentFps"
       fpsElement.asInstanceOf[dom.html.Element].style.color =
         if (currentFps > 30) "#00ff00"
         else if (currentFps > 15) "#ffff00"
