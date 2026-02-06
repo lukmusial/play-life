@@ -2,6 +2,16 @@
 
 A high-performance implementation of Conway's Game of Life with 2D and 3D visualizations. All game logic runs client-side via Scala.js for 60+ FPS performance.
 
+## Screenshots
+
+### 2D Simulation
+![2D Game of Life](screenshots/2d-screenshot.png)
+![2D Simulation](screenshots/2d-simulation.gif)
+
+### 3D Simulation
+![3D Game of Life](screenshots/3d-screenshot.png)
+![3D Simulation](screenshots/3d-simulation.gif)
+
 ## Features
 
 - **2D Simulation**: Classic Conway's Game of Life at 60+ FPS
